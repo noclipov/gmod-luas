@@ -39,10 +39,11 @@ end
 local function act(emote)
     con("act2", emote)
 end
-local function use(class, silent)
+local function use(class, silent, give)
 	silent = silent or false
+	give = give or false
 	local spawned = false
-	if !me:HasWeapon(class) then con("gm_giveswep", class); spawned = true end
+	if !me:HasWeapon(class) and give then con("gm_giveswep", class); spawned = true end
     if me:HasWeapon(class) and get_swep(me) ~= class and !silent then notify(sf("%s %s", spawned and "Gave" or "Equipped", class)) end
 	con("use", class)
 end
@@ -258,31 +259,32 @@ for cmd,callback in pairs(commands) do
     concommand.Add(cmd, callback)
 end
 if DarkRP then
+	local disguise_team = TEAM_SATORU
     local function tasered(target)
         target = target or EyePlayer()
-		if !target then return end
+		if !IsValid(target) then return end
         return target:HasWeapon("weapon_tasered")
     end
     local function handcuffed_p(target)
         target = target or EyePlayer()
-		if !target then return end
+		if !IsValid(target) then return end
         return target:GetNWBool("isHandcuffed")
     end
     local function disguised(target)
         target = target or EyePlayer()
-		if !target then return end
+		if !IsValid(target) then return end
         return target:IsDisguised()
     end
     local function disguise(job)
-        job = job or TEAM_HOBO
+        job = job or disguise_team or TEAM_HOBO
         net.Start("PlayerDisguise")
         net.WriteInt(job, 8)
         net.SendToServer()
-        say("/job "..team.GetAllTeams()[job].Name)
+		if disguised(me) then say("/job "..team.GetAllTeams()[job].Name) end
     end
     local function IsCP(target)
         target = target or EyePlayer()
-		if !target then return end
+		if !IsValid(target) then return end
         return rp.CivilProtection[target:Team()]
     end
 	hooks = {
@@ -309,32 +311,44 @@ if DarkRP then
 		hook.Remove(Event, Data.name)
 		hook.Add(Event, Data.name, Data.callback)
 	end
-    disguise_team = TEAM_SATORU
 	jobs_presets = {
 		crime_preset = {
 			action1 = function(arg) con("adminmode") end,
-            action2 = function(arg) act("dance") end, 
-			action3 = function(arg) use("the_hand") end,
+            action2 = function(arg) use("the_hand") end, 
+			action3 = function(arg) use("moneychecker"); use("swep_pickpocket") end,
 			action4 =  function(arg) if get_swep(me) == "the_hand" then return end convar_toggle("sitting_allow_on_me") end,
-			action5 =  function(arg) use("m9k_dbarrel") end,
+			action5 =  function(arg) use("m9k_dbarrel", false, true) end,
 		},
 		police_preset = {
 			action1 = function(arg) con("adminmode") end,
-			action3 = function(arg) if !IsCP() then use("m9k_dbarrel"); say("Лицом к стене/в пол! 1... 2... 3...") end end,
+			action3 = function(arg) if !IsCP() then use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
             action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
-			action5 =  function(arg) use("m9k_dbarrel") end,
+			action5 =  function(arg) use("m9k_dbarrel", false, true) end,
         },
 		civil_preset = {
             action1 = function(arg) con("adminmode") end,
             action2 = function(arg) act("dance") end,
 			action4 = function(arg) if get_swep(me) == "the_hand" then return end con("toggle_convar", "sitting_allow_on_me") end,
         },
+		mayor_preset = {
+			action1 = function(arg) con("adminmode") end,
+			action2 = function(arg) say("/lottery 1e6") end,
+            action3 = function(arg) say("/lockdown ПНН") end,
+			action5 = function(arg) say("/givelicense") end, 
+        },
 		fbi_preset = {
 			action1 = function(arg) con("adminmode") end,
-			action2 = function(arg) if !disguised(me) then disguise(disguise_team) else use("the_hand") end end,
-            action3 = function(arg) if !IsCP() then use("m9k_dbarrel"); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение FBI человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
+			action2 = function(arg) if !disguised(me) then disguise() end use("the_hand") end,
+            action3 = function(arg) if !IsCP() then use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение FBI человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
             action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
-			action5 =  function(arg) use("m9k_dbarrel") end,
+			action5 =  function(arg) use("m9k_dbarrel", false, true) end,
+        },
+		hitman_preset = {
+			action1 = function(arg) con("adminmode") end,
+			action2 = function(arg) if !disguised(me) then disguise() end end,
+            action3 = function(arg) use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") end,
+            action4 = function(arg) if get_swep(me) == "the_hand" then return end use("m9k_barret_m82")end,
+			action5 = function(arg) use("m9k_dbarrel", false, true) end, 
         },
 		admin_preset = {
 			action1 = function(arg) say("!spectate") end, 
@@ -345,42 +359,51 @@ if DarkRP then
         },
 	}
     known_jobs = {
+		-- Police
+		[TEAM_POLICE] = jobs_presets.police_preset,
+        [TEAM_POLICE2] = jobs_presets.police_preset,
+        [TEAM_CHIEF] = jobs_presets.police_preset,
+        [TEAM_SWAT] = jobs_presets.police_preset,
+        [TEAM_LSWAT] = jobs_presets.police_preset,
+        [TEAM_BULL] = jobs_presets.police_preset,
+        [TEAM_LEGION] = jobs_presets.police_preset,
         [TEAM_FBI] = jobs_presets.fbi_preset,
         [TEAM_CEOFBI] = jobs_presets.fbi_preset,
-        [TEAM_POLICE] = jobs_presets.police_preset,
-        [TEAM_POLICE2] = jobs_presets.police_preset,
-        [TEAM_MAYOR] = {
-			action1 = function(arg) con("adminmode") end,
-			action2 = function(arg) say("/lottery 1e6") end,
-            action3 = function(arg) say("/lockdown ПНН") end,
-			action5 = function(arg) say("/givelicense") end, 
-        },
+        [TEAM_MAYOR] = mayor_preset,
 		[TEAM_SUPERGIRL] = {
 			action1 = function(arg) con("adminmode") end,
 			action2 = function(arg) use("sm_weapon_homelander") end,
-            action3 = function(arg) if !IsCP() then use("m9k_dbarrel"); say("Лицом к стене/в пол! 1... 2... 3...") end end,
+            action3 = function(arg) if !IsCP() then use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
             action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
-			action5 = function(arg) use("m9k_dbarrel") end, 
+			action5 = function(arg) use("m9k_dbarrel", false, true) end, 
         },
+		-- Hitmans
+		[TEAM_VIPER] = hitman_preset,
+		[TEAM_HITMAN] = hitman_preset,
+		-- Maniacs
         [TEAM_JASON] = {
 			action1 = function(arg) con("adminmode") end,
-			action2 = function(arg) if !disguised(me) then disguise(disguise_team) else use("csgo_m9_crimsonwebs") end end,
-            -- action3 = function(arg) use("m9k_dbarrel"); say("Лицом к стене/в пол! 1... 2... 3...") end,
-            -- action4 = function(arg) if get_swep(me) == "the_hand" then return end use("m9k_barret_m82")end,
-			-- action5 = function(arg) use("m9k_dbarrel") end, 
+			action2 = function(arg) if !disguised(me) then disguise() else use("csgo_m9_crimsonwebs") end end,
+            action3 = function(arg) say("Лицом к стене/в пол! 1... 2... 3...") end,
         },
-        [TEAM_VIPER] = {
-			action1 = function(arg) con("adminmode") end,
-			action2 = function(arg) if !disguised(me) then disguise(disguise_team) else use("blink") end end,
-            action3 = function(arg) use("m9k_dbarrel"); say("Лицом к стене/в пол! 1... 2... 3...") end,
-            action4 = function(arg) if get_swep(me) == "the_hand" then return end use("m9k_barret_m82")end,
-			action5 = function(arg) use("m9k_dbarrel") end, 
-        },
-        [TEAM_EMAFIA] = jobs_presets.crime_preset,
+		-- Crime
         [TEAM_MAFIA] = jobs_presets.crime_preset,
+        [TEAM_EMAFIA] = jobs_presets.crime_preset,
+        [TEAM_MOB] = jobs_presets.crime_preset,
+        [TEAM_CYBER] = jobs_presets.crime_preset,
+        [TEAM_LORDE] = jobs_presets.crime_preset,
+        [TEAM_KILLA] = jobs_presets.crime_preset,
+        [TEAM_VOR] = jobs_presets.crime_preset,
+		-- Civil
+        [TEAM_CASINO] = jobs_presets.civil_preset,
+        [TEAM_GUN] = jobs_presets.civil_preset,
+        [TEAM_DOG] = jobs_presets.civil_preset,
+        [TEAM_NARKOS] = jobs_presets.civil_preset,
         [TEAM_MINER] = jobs_presets.civil_preset,
         [TEAM_CITIZEN] = jobs_presets.civil_preset,
-        [TEAM_NARKOS] = jobs_presets.civil_preset,
+        [TEAM_GUARD] = jobs_presets.civil_preset,
+        [TEAM_HOBO] = jobs_presets.civil_preset,
+		-- Other
         [TEAM_BANNED] = {
 			action1 = function(arg) con("adminmode") end,
 			action2 = function(arg) act("dance") end,
@@ -397,4 +420,5 @@ if DarkRP then
 		end)
 	end
 end
+
 print("[Misc] Loaded!")
