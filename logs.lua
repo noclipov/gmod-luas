@@ -77,8 +77,7 @@ surface.CreateFont("KillFeedSmall", {
 local function getSteamIDNum(ply)
     if not IsValid(ply) then return "?????" end
     local steamid = ply:SteamID()
-    local id = string.match(steamid or "", "STEAM_%d:%d:(%d+)")
-    return id or "?????"
+    return steamid or "?????"
 end
 
 local function getAttackerName(attacker)
