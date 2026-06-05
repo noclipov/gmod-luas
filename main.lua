@@ -17,7 +17,7 @@ local function check_files(create)
 		load_file(path, filename, create)
 	end
 end
-check_files()
+check_files(true)
 
 commands = {
 	update_files = function() check_files(true) end,
