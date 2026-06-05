@@ -426,6 +426,8 @@ CreateDynamicPrompt("Выбор маскировки", "Под какую про
     {name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
     {name="Забаненный", callback=function() disguise_team = TEAM_BANNED end},
     {name="Девочка-Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
+    {name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
+    {name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
 }, function(choice)
     CreateDynamicPrompt("Выбор оружия", "Каким основным оружием будем пользоваться?", {
 		{name="Дабла", callback=function() main_weapon = "m9k_dbarrel" end},
