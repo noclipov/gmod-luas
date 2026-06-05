@@ -65,6 +65,10 @@ function CreateDynamicPrompt(title, question, buttons)
         border = Color(50, 50, 60, 255),
     }
     
+    -- Блокируем ввод
+    frame:SetKeyboardInputEnabled(true)
+    frame:SetMouseInputEnabled(true)
+    
     -- Отрисовка окна
     function frame:Paint(w, h)
         draw.RoundedBox(12, 0, 0, w, h, colors.bg)
@@ -91,6 +95,11 @@ function CreateDynamicPrompt(title, question, buttons)
     buttonPanel:SetPos(20, frame:GetTall() - 65)
     buttonPanel:SetSize(frame:GetWide() - 40, 50)
     function buttonPanel:Paint() end
+    
+    -- Создаём переменную для результата
+    local selectedResult = nil
+    local waiting = true
+    
     local function CreateButtons()
         buttonPanel:Clear()
         local btnCount = #buttons
@@ -119,11 +128,16 @@ function CreateDynamicPrompt(title, question, buttons)
                 draw.SimpleText(btnName, "PromptButtonFont", w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
             function button:DoClick()
+                selectedResult = btn
+                waiting = false
                 frame:Close()
-                if btnCallback and isfunction(btnCallback) then btnCallback() end
+                if btnCallback and isfunction(btnCallback) then 
+                    btnCallback() 
+                end
             end
         end
     end
+    
     local function AdjustWindowSize()
         local btnCount = #buttons
         local minWidth = math.max(400, 80 + (btnCount * 100) + ((btnCount - 1) * 10))
@@ -132,7 +146,6 @@ function CreateDynamicPrompt(title, question, buttons)
         if btnCount > 4 then newHeight = 210 end
         frame:SetSize(newWidth, newHeight)
         frame:Center()
-        if IsValid(closeBtn) then closeBtn:SetPos(newWidth - 30, 8) end
         if IsValid(questionLabel) then questionLabel:SetSize(newWidth - 40, 60) end
         if IsValid(buttonPanel) then
             buttonPanel:SetSize(newWidth - 40, 50)
@@ -140,8 +153,28 @@ function CreateDynamicPrompt(title, question, buttons)
         end
         CreateButtons()
     end
+    
     AdjustWindowSize()
-    return frame
+    
+    -- Блокируем выполнение через таймер
+    timer.Create("WaitForPrompt_" .. tostring(frame), 0.1, 0, function()
+        if not IsValid(frame) then
+            timer.Remove("WaitForPrompt_" .. tostring(frame))
+            return
+        end
+        
+        if not waiting then
+            timer.Remove("WaitForPrompt_" .. tostring(frame))
+        end
+    end)
+    
+    -- Ожидание выбора
+    while waiting and IsValid(frame) do
+        timer.Sleep(0.01)
+        game.RunFrame()
+    end
+    
+    return selectedResult
 end
 local jobs_presets, known_jobs, hooks_to_remove, panels_to_remove, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
 -- Removing useless magicrp's keybinds
