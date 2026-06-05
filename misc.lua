@@ -1,4 +1,7 @@
 if not DarkRP then print("[Misc] Not Loaded! There is no DarkRP.") return end
+surface.CreateFont("PromptTitleFont", {font = "Jura Regular",size = 20,weight = 700,antialias = true,shadow = false})
+surface.CreateFont("PromptQuestionFont", {font = "Jura Regular",size = 15,weight = 500,antialias = true,shadow = false})
+surface.CreateFont("PromptButtonFont", {font = "Jura Regular",size = 14,weight = 600,antialias = true,shadow = false})
 local sf = string.format
 local me = LocalPlayer()
 local copy = SetClipboardText
@@ -48,7 +51,7 @@ local function use(class, silent, give)
     if me:HasWeapon(class) and get_swep(me) ~= class and !silent then notify(sf("%s %s", spawned and "Gave" or "Equipped", class)) end
 	con("use", class)
 end
-function CreateDynamicPrompt(title, question, buttons)
+function CreateDynamicPrompt(title, question, buttons, callback)
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:ShowCloseButton(false)
@@ -69,15 +72,20 @@ function CreateDynamicPrompt(title, question, buttons)
     function frame:Paint(w, h)
         draw.RoundedBox(12, 0, 0, w, h, colors.bg)
         draw.RoundedBox(2, 20, h - 2, w - 40, 1, colors.border)
+        
+        -- Рисуем заголовок
         surface.SetFont("PromptTitleFont")
-        local x,y = surface.GetTextSize(title)
+        local textW, textH = surface.GetTextSize(title)
         surface.SetTextColor(colors.text)
-        surface.SetTextPos(w/2-x/2.2, 1)
+        surface.SetTextPos(w / 2 - textW / 2, 10)
         surface.DrawText(title)
-        surface.SetDrawColor(colors.text)
-        surface.DrawLine(0, 25, w, 25)
+        
+        -- Рисуем линию
+        surface.SetDrawColor(colors.border)
+        surface.DrawLine(20, 32, w - 20, 32)
     end
     
+    -- Текст вопроса
     local questionLabel = vgui.Create("DLabel", frame)
     questionLabel:SetText(question)
     questionLabel:SetFont("PromptQuestionFont")
@@ -85,14 +93,47 @@ function CreateDynamicPrompt(title, question, buttons)
     questionLabel:SetWrap(true)
     questionLabel:SetAutoStretchVertical(true)
     questionLabel:SetSize(frame:GetWide() - 40, 60)
-    questionLabel:SetPos(20, 50)
+    questionLabel:SetPos(20, 45)
     
+    -- Панель для кнопок
     local buttonPanel = vgui.Create("DPanel", frame)
     buttonPanel:SetPos(20, frame:GetTall() - 65)
     buttonPanel:SetSize(frame:GetWide() - 40, 50)
     function buttonPanel:Paint() end
+    
+    -- Кэш для шрифтов разных размеров
+    local fontCache = {}
+    local function GetFontOfSize(size)
+        local fontName = "PromptButtonFont_" .. size
+        if not fontCache[size] then
+            surface.CreateFont(fontName, {
+                font = "Roboto",
+                size = size,
+                weight = 600,
+                antialias = true,
+                shadow = false
+            })
+            fontCache[size] = fontName
+        end
+        return fontCache[size]
+    end
+    
+    -- Функция для получения подходящего размера шрифта
+    local function GetOptimalFontSize(text, maxWidth, maxHeight)
+        for size = 14, 8, -1 do
+            local fontName = GetFontOfSize(size)
+            surface.SetFont(fontName)
+            local textW, textH = surface.GetTextSize(text)
+            if textW <= maxWidth - 20 and textH <= maxHeight then
+                return fontName
+            end
+        end
+        return GetFontOfSize(8)
+    end
+    
     local function CreateButtons()
         buttonPanel:Clear()
+        
         local btnCount = #buttons
         if btnCount == 0 then return end
         local btnHeight = 38
@@ -102,6 +143,7 @@ function CreateDynamicPrompt(title, question, buttons)
         btnWidth = math.max(90, btnWidth)
         local totalWidth = (btnCount * btnWidth) + ((btnCount - 1) * spacing)
         local startX = (availableWidth - totalWidth) / 2
+        
         for i, btn in ipairs(buttons) do
             local btnX = startX + ((i - 1) * (btnWidth + spacing))
             local button = vgui.Create("DButton", buttonPanel)
@@ -110,36 +152,68 @@ function CreateDynamicPrompt(title, question, buttons)
             button:SetPos(btnX, 6)
             local btnName = btn.name
             local btnCallback = btn.callback
+            
+            -- Вычисляем подходящий шрифт для этой кнопки
+            local buttonFont = GetOptimalFontSize(btnName, btnWidth, btnHeight)
+            
             function button:Paint(w, h)
                 if self:IsHovered() then
                     draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 130))
                 end
                 draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 100))
+                
                 local textColor = self:IsHovered() and Color(255, 255, 255, 255) or Color(200, 200, 210, 220)
-                draw.SimpleText(btnName, "PromptButtonFont", w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                draw.SimpleText(btnName, buttonFont, w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
+            
             function button:DoClick()
                 frame:Close()
-                if btnCallback and isfunction(btnCallback) then btnCallback() end
+                if btnCallback and isfunction(btnCallback) then 
+                    btnCallback()
+                end
+                if callback and isfunction(callback) then
+                    callback(btn)
+                end
             end
         end
     end
+    
     local function AdjustWindowSize()
         local btnCount = #buttons
         local minWidth = math.max(400, 80 + (btnCount * 100) + ((btnCount - 1) * 10))
+        
+        -- Увеличиваем ширину для длинных слов
+        local maxNameLength = 0
+        for _, btn in ipairs(buttons) do
+            maxNameLength = math.max(maxNameLength, #btn.name)
+        end
+        
+        if maxNameLength > 15 then
+            minWidth = math.max(minWidth, 550)
+        elseif maxNameLength > 10 then
+            minWidth = math.max(minWidth, 480)
+        end
+        
         local newWidth = math.min(minWidth, ScrW() - 100)
         local newHeight = 180
         if btnCount > 4 then newHeight = 210 end
+        
         frame:SetSize(newWidth, newHeight)
         frame:Center()
-        if IsValid(closeBtn) then closeBtn:SetPos(newWidth - 30, 8) end
-        if IsValid(questionLabel) then questionLabel:SetSize(newWidth - 40, 60) end
+        
+        if IsValid(questionLabel) then 
+            questionLabel:SetSize(newWidth - 40, 60) 
+            questionLabel:SetPos(20, 45)
+        end
+        
         if IsValid(buttonPanel) then
             buttonPanel:SetSize(newWidth - 40, 50)
             buttonPanel:SetPos(20, newHeight - 65)
         end
+        
         CreateButtons()
     end
+    
     AdjustWindowSize()
     return frame
 end
@@ -347,16 +421,17 @@ for cmd,callback in pairs(commands) do
     concommand.Add(cmd, callback)
 end
 local disguise_team = TEAM_SATORU
-CreateDynamicPrompt("Маскировка", "Выберите профессию для маскировки:", {
+local main_weapon = "m9k_dbarrel"
+CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
     {name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
     {name="Забаненный", callback=function() disguise_team = TEAM_BANNED end},
     {name="Девочка-Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
-})
-local main_weapon = "m9k_dbarrel"
-CreateDynamicPrompt("Оружие", "Выберите основное оружие:", {
-    {name="dbarrel", callback=function() main_weapon = "m9k_dbarrel" end},
-    {name="бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
-})
+}, function(choice)
+    CreateDynamicPrompt("Выбор оружия", "Каким основным оружием будем пользоваться?", {
+		{name="Дабла", callback=function() main_weapon = "m9k_dbarrel" end},
+		{name="Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
+	})
+end)
 local function tasered(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
@@ -414,13 +489,13 @@ jobs_presets = {
 		action2 = function(arg) use("the_hand") end, 
 		action3 = function(arg) use("moneychecker"); use("swep_pickpocket") end,
 		action4 =  function(arg) if get_swep(me) == "the_hand" then return end convar_toggle("sitting_allow_on_me") end,
-		action5 =  function(arg) use("m9k_dbarrel", false, true) end,
+		action5 =  function(arg) use(main_weapon, false, true) end,
 	},
 	police_preset = {
 		action1 = function(arg) con("adminmode") end,
-		action3 = function(arg) if !IsCP() then use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
+		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
-		action5 =  function(arg) use("m9k_dbarrel", false, true) end,
+		action5 =  function(arg) use(main_weapon, false, true) end,
 	},
 	civil_preset = {
 		action1 = function(arg) con("adminmode") end,
@@ -436,16 +511,16 @@ jobs_presets = {
 	fbi_preset = {
 		action1 = function(arg) con("adminmode") end,
 		action2 = function(arg) if !disguised(me) then disguise() end use("the_hand") end,
-		action3 = function(arg) if !IsCP() then use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение FBI человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
+		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение FBI человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
-		action5 =  function(arg) use("m9k_dbarrel", false, true) end,
+		action5 =  function(arg) use(main_weapon, false, true) end,
 	},
 	hitman_preset = {
 		action1 = function(arg) con("adminmode") end,
 		action2 = function(arg) if !disguised(me) then disguise() end end,
-		action3 = function(arg) use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") end,
+		action3 = function(arg) use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("m9k_barret_m82")end,
-		action5 = function(arg) use("m9k_dbarrel", false, true) end, 
+		action5 = function(arg) use(main_weapon, false, true) end, 
 	},
 	admin_preset = {
 		action1 = function(arg) say("!spectate") end, 
@@ -470,9 +545,9 @@ known_jobs = {
 	[TEAM_SUPERGIRL] = {
 		action1 = function(arg) con("adminmode") end,
 		action2 = function(arg) use("sm_weapon_homelander") end,
-		action3 = function(arg) if !IsCP() then use("m9k_dbarrel", false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
+		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
-		action5 = function(arg) use("m9k_dbarrel", false, true) end, 
+		action5 = function(arg) use(main_weapon, false, true) end, 
 	},
 	-- Hitmans
 	[TEAM_VIPER] = hitman_preset,
