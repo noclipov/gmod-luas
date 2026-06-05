@@ -1,4 +1,4 @@
-if not DarkRP then return end
+if not DarkRP then print("[Misc] Not Loaded! There is no DarkRP.") return end
 local sf = string.format
 local me = LocalPlayer()
 local copy = SetClipboardText
@@ -18,7 +18,7 @@ local function get_target(steam_id, ent)
 end
 local function Call(target)
 	net.Start( 'phone' )
-		net.WriteTable{ply=player.GetBySteamID(target) or target, act='call'}
+	net.WriteTable({ply=player.GetBySteamID(target) or target, act='call'})
 	net.SendToServer()
 end
 local function notify(text)
@@ -47,6 +47,101 @@ local function use(class, silent, give)
 	if !me:HasWeapon(class) and give then con("gm_giveswep", class); spawned = true end
     if me:HasWeapon(class) and get_swep(me) ~= class and !silent then notify(sf("%s %s", spawned and "Gave" or "Equipped", class)) end
 	con("use", class)
+end
+function CreateDynamicPrompt(title, question, buttons)
+    local frame = vgui.Create("DFrame")
+    frame:SetTitle("")
+    frame:ShowCloseButton(false)
+    frame:SetDraggable(false)
+    frame:SetSize(500, 200)
+    frame:Center()
+    frame:MakePopup()
+    
+    -- Цветовая схема
+    local colors = {
+        bg = Color(30, 30, 35, 245),
+        text = Color(240, 240, 245, 255),
+        textMuted = Color(180, 180, 200, 255),
+        border = Color(50, 50, 60, 255),
+    }
+    
+    -- Отрисовка окна
+    function frame:Paint(w, h)
+        draw.RoundedBox(12, 0, 0, w, h, colors.bg)
+        draw.RoundedBox(2, 20, h - 2, w - 40, 1, colors.border)
+        surface.SetFont("PromptTitleFont")
+        local x,y = surface.GetTextSize(title)
+        surface.SetTextColor(colors.text)
+        surface.SetDrawColor(colors.text)
+        surface.SetTextPos(w/2-x/2.2, 1)
+        surface.DrawText(title)
+        surface.DrawLine(0, 25, w, 25)
+    end
+    
+    local questionLabel = vgui.Create("DLabel", frame)
+    questionLabel:SetText(question)
+    questionLabel:SetFont("PromptQuestionFont")
+    questionLabel:SetTextColor(colors.textMuted)
+    questionLabel:SetWrap(true)
+    questionLabel:SetAutoStretchVertical(true)
+    questionLabel:SetSize(frame:GetWide() - 40, 60)
+    questionLabel:SetPos(20, 50)
+    
+    local buttonPanel = vgui.Create("DPanel", frame)
+    buttonPanel:SetPos(20, frame:GetTall() - 65)
+    buttonPanel:SetSize(frame:GetWide() - 40, 50)
+    function buttonPanel:Paint() end
+    local function CreateButtons()
+        buttonPanel:Clear()
+        local btnCount = #buttons
+        if btnCount == 0 then return end
+        local btnHeight = 38
+        local spacing = 10
+        local availableWidth = buttonPanel:GetWide()
+        local btnWidth = math.min(140, (availableWidth - ((btnCount - 1) * spacing)) / btnCount)
+        btnWidth = math.max(90, btnWidth)
+        local totalWidth = (btnCount * btnWidth) + ((btnCount - 1) * spacing)
+        local startX = (availableWidth - totalWidth) / 2
+        for i, btn in ipairs(buttons) do
+            local btnX = startX + ((i - 1) * (btnWidth + spacing))
+            local button = vgui.Create("DButton", buttonPanel)
+            button:SetText("")
+            button:SetSize(btnWidth, btnHeight)
+            button:SetPos(btnX, 6)
+            local btnName = btn.name
+            local btnCallback = btn.callback
+            function button:Paint(w, h)
+                if self:IsHovered() then
+                    draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 130))
+                end
+                draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 100))
+                local textColor = self:IsHovered() and Color(255, 255, 255, 255) or Color(200, 200, 210, 220)
+                draw.SimpleText(btnName, "PromptButtonFont", w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
+            function button:DoClick()
+                frame:Close()
+                if btnCallback and isfunction(btnCallback) then btnCallback() end
+            end
+        end
+    end
+    local function AdjustWindowSize()
+        local btnCount = #buttons
+        local minWidth = math.max(400, 80 + (btnCount * 100) + ((btnCount - 1) * 10))
+        local newWidth = math.min(minWidth, ScrW() - 100)
+        local newHeight = 180
+        if btnCount > 4 then newHeight = 210 end
+        frame:SetSize(newWidth, newHeight)
+        frame:Center()
+        if IsValid(closeBtn) then closeBtn:SetPos(newWidth - 30, 8) end
+        if IsValid(questionLabel) then questionLabel:SetSize(newWidth - 40, 60) end
+        if IsValid(buttonPanel) then
+            buttonPanel:SetSize(newWidth - 40, 50)
+            buttonPanel:SetPos(20, newHeight - 65)
+        end
+        CreateButtons()
+    end
+    AdjustWindowSize()
+    return frame
 end
 local jobs_presets, known_jobs, hooks_to_remove, panels_to_remove, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
 -- Removing useless magicrp's keybinds
@@ -252,6 +347,16 @@ for cmd,callback in pairs(commands) do
     concommand.Add(cmd, callback)
 end
 local disguise_team = TEAM_SATORU
+CreateDynamicPrompt("Маскировка", "Выберите профессию для маскировки:", {
+    {name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
+    {name="Забаненный", callback=function() disguise_team = TEAM_BANNED end},
+    {name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
+})
+local main_weapon = "m9k_dbarrel"
+CreateDynamicPrompt("Оружие", "Выберите основное оружие:", {
+    {name="dbarrel", callback=function() main_weapon = "m9k_dbarrel" end},
+    {name="бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
+})
 local function tasered(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
@@ -411,5 +516,4 @@ for i=1,10 do
 		known_jobs[job]["action"..i](#args==1 and args[1] or nil)
 	end)
 end
-
 print("[Misc] Loaded!")
