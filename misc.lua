@@ -456,6 +456,14 @@ local function disguise(job)
 	net.SendToServer()
 	if disguised(me) then say("/job "..team.GetAllTeams()[job].Name) end
 end
+local function job_menu()
+	if me:GetUserGroup() ~= "superadmin" then return end
+	CreateDynamicPrompt("Выбор профессии", "Какую профессию сетаем?", {
+		{name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
+		{name="Агент ЦРУ", callback=function() disguise_team = TEAM_BANNED end},
+		{name="Супер Гёрл", callback=function() disguise_team = TEAM_MAFIOZI end},
+	})
+end
 local function IsCP(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
@@ -502,6 +510,7 @@ jobs_presets = {
 	civil_preset = {
 		action1 = function(arg) con("adminmode") end,
 		action2 = function(arg) act("dance") end,
+		action3 = function(arg) job_menu() end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end con("toggle_convar", "sitting_allow_on_me") end,
 	},
 	mayor_preset = {

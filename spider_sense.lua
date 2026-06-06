@@ -359,6 +359,4 @@ concommand.Add("outofview_test", function() test_mode = not test_mode end)
 
 print("========================================")
 print("[OutOfView] Loaded - Wall Check Enabled")
-print("  Only shows if enemy has LINE OF SIGHT")
-print("  + Shows enemy's active weapon & ammo")
 print("========================================")
