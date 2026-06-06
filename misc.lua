@@ -459,9 +459,9 @@ end
 local function job_menu()
 	if me:GetUserGroup() ~= "superadmin" then return end
 	CreateDynamicPrompt("Выбор профессии", "Какую профессию сетаем?", {
-		{name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
-		{name="Агент ЦРУ", callback=function() disguise_team = TEAM_BANNED end},
-		{name="Супер Гёрл", callback=function() disguise_team = TEAM_MAFIOZI end},
+		{name="Годжо", callback=function() con("ba", "setjob", me:SteamID(), "Satoru Gojo") end},
+		{name="Агент ЦРУ", callback=function() con("ba", "setjob", me:SteamID(), "Агент ЦРУ") end},
+		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
 	})
 end
 local function IsCP(target)
