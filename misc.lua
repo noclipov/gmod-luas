@@ -260,6 +260,8 @@ end
 for _, panel in pairs(vgui.GetAll()) do
     if panel and panel.GetName then if panels_to_remove[panel:GetName()] then panel:Remove() end end
 end
+local tallbar = ScrH() * .02314815
+local tallbar_c = tallbar * .5
 local function DrawShadowText(text, font, x, y, color, x_a, y_a, color_shadow)
 	color_shadow = color_shadow or Color(0, 0, 0,255)
 	draw.SimpleText(text, font, x + 1, y + 1, color_shadow, x_a, y_a)
@@ -344,7 +346,7 @@ net.Receive("freports.send", function()
 			DrawBlur(self, 5)
 			DrawBox(0,0,w,h)
 			DrawBox(0,0,w,tallbar)
-			DrawShadowText("Жалоба", "reports_8", w * .5, ScrH() * .02314815 * .5, Color(255,255,255), 1, 1)
+			DrawShadowText("Жалоба", "reports_8", w * .5, tallbar_c, Color(255,255,255), 1, 1)
 		end
 
 		local report_chat = vgui.Create("RichText", freports.m)
