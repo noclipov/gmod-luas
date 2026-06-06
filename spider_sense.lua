@@ -1,6 +1,7 @@
 --[[
     HUD: Out of View Indicator (Wall Check)
     Реагирует только если прицел проходит без стен
+    + Отображение информации об оружии целителя
 ]]
 
 local ply = LocalPlayer()
@@ -18,6 +19,10 @@ local config = {
     max_distance = 2500,
     aim_tolerance = 10,
     near_tolerance = 30,
+    
+    -- Настройки для информации об оружии
+    weapon_info_offset = 18,     -- Смещение от стрелки (в пикселях)
+    weapon_info_bg_alpha = 180,  -- Прозрачность фона
 }
 
 -- Проверка видимости через стены
@@ -29,7 +34,7 @@ local function IsVisible(shooter, target)
     trace.mask = MASK_SHOT_HULL
     
     local tr = util.TraceLine(trace)
-    return not tr.HitWorld -- Если не попали в мир (стену), значит видит
+    return not tr.HitWorld
 end
 
 -- Проверка прицела с учётом стен
@@ -40,9 +45,8 @@ local function CheckAimProximity(shooter, target)
     local distance = shooter:GetPos():Distance(target:GetPos())
     if distance > config.max_distance then return false, false end
     
-    -- Сначала проверяем видимость
     if not IsVisible(shooter, target) then
-        return false, false -- Не видит сквозь стену - игнорируем
+        return false, false
     end
     
     local shooterAngles = shooter:EyeAngles()
@@ -58,14 +62,73 @@ local function CheckAimProximity(shooter, target)
     return isDirect, isNear
 end
 
--- Поиск угроз (только видимые)
+-- Получение информации об активном оружии игрока (исправленная версия)
+local function GetWeaponInfo(player)
+    if not IsValid(player) then return nil end
+    
+    local weapon = player:GetActiveWeapon()
+    if not IsValid(weapon) then return nil end
+    
+    -- Проверяем, может ли оружие стрелять (имеет патроны)
+    local clip1 = weapon:Clip1()  -- Патроны в магазине
+    
+    -- Для некоторых оружий (например, дробовики) может быть Clip2
+    local clip2 = weapon:Clip2()
+    
+    -- Проверяем наличие патронов в резерве (только если в магазине нет)
+    local hasReserveAmmo = false
+    if clip1 == 0 or clip1 == nil then
+        -- Получаем ID типа патронов для этого оружия
+        local primaryAmmoType = weapon:GetPrimaryAmmoType()
+        if primaryAmmoType and primaryAmmoType ~= -1 then
+            local reserveAmmo = player:GetAmmoCount(primaryAmmoType)
+            hasReserveAmmo = (reserveAmmo and reserveAmmo > 0)
+        end
+    end
+    
+    -- Если нет патронов ни в магазине, ни в запасе - не показываем оружие
+    local hasAmmo = (clip1 and clip1 > 0) or (clip2 and clip2 > 0) or hasReserveAmmo
+    
+    if not hasAmmo then return nil end
+    
+    -- Получаем печатное название оружия
+    local weaponClass = weapon:GetClass()
+    local weaponName = weapons.Get(weaponClass)
+    local displayName = weaponName and weaponName.PrintName or weaponClass
+    
+    -- Обрезаем длинные названия
+    if #displayName > 15 then
+        displayName = displayName:sub(1, 12) .. "..."
+    end
+    
+    -- Получаем максимальное количество патронов в магазине
+    local maxClip1 = weapon:GetMaxClip1() or 0
+    
+    -- Текущие патроны (берём Clip1, если есть, иначе Clip2)
+    local currentAmmo = (clip1 and clip1 > 0) and clip1 or (clip2 or 0)
+    
+    return {
+        name = displayName,
+        ammo = currentAmmo,
+        maxAmmo = maxClip1,
+        weapon = weapon,
+        hasReserve = hasReserveAmmo and currentAmmo == 0  -- Флаг что есть запас, но магазин пуст
+    }
+end
+
+-- Поиск угроз (только видимые) с оружием
 local function FindThreats()
     local threats = {}
     for _, plyCheck in ipairs(player.GetAll()) do
         if plyCheck == ply or not plyCheck:Alive() then continue end
         local isDirect, isNear = CheckAimProximity(plyCheck, ply)
         if isDirect or isNear then
-            table.insert(threats, {player = plyCheck, isDirect = isDirect})
+            local weaponInfo = GetWeaponInfo(plyCheck)
+            table.insert(threats, {
+                player = plyCheck,
+                isDirect = isDirect,
+                weaponInfo = weaponInfo
+            })
         end
     end
     return threats
@@ -147,6 +210,44 @@ local function DrawTriangleArrow(centerX, centerY, directionAngle, color)
     surface.DrawPoly(triangle)
 end
 
+-- Отображение информации об оружии
+local function DrawWeaponInfo(centerX, centerY, directionAngle, weaponInfo, color)
+    if not weaponInfo then return end
+    
+    local screenAngle = directionAngle - math.pi / 2
+    local textX = centerX + math.cos(screenAngle) * (config.radius + config.weapon_info_offset)
+    local textY = centerY + math.sin(screenAngle) * (config.radius + config.weapon_info_offset)
+    
+    -- Добавляем индикатор, если есть запас но магазин пуст
+    local ammoText = weaponInfo.ammo .. "/" .. weaponInfo.maxAmmo
+    if weaponInfo.hasReserve and weaponInfo.ammo == 0 then
+        ammoText = "0/" .. weaponInfo.maxAmmo .. " (R)"
+    end
+    
+    local text = weaponInfo.name .. " [" .. ammoText .. "]"
+    
+    -- Фон для текста (для лучшей читаемости)
+    surface.SetFont("Trebuchet18")
+    local textW, textH = surface.GetTextSize(text)
+    
+    surface.SetDrawColor(0, 0, 0, config.weapon_info_bg_alpha)
+    surface.DrawRect(textX - textW/2 - 2, textY - textH/2 - 1, textW + 4, textH + 2)
+    
+    -- Цвет текста зависит от количества патронов
+    local textColor
+    if weaponInfo.ammo == 0 and weaponInfo.hasReserve then
+        textColor = Color(255, 100, 100, 255)  -- Красный (нужна перезарядка)
+    elseif weaponInfo.ammo <= 3 then
+        textColor = Color(255, 80, 80, 255)  -- Красный (мало патронов)
+    elseif weaponInfo.ammo <= 10 then
+        textColor = Color(255, 200, 80, 255) -- Жёлтый
+    else
+        textColor = Color(200, 255, 200, 255) -- Зелёный
+    end
+    
+    draw.SimpleText(text, "Trebuchet18", textX, textY, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end
+
 -- Основная отрисовка
 local function DrawThreatIndicator()
     if not IsValid(ply) or not ply:Alive() then return end
@@ -166,12 +267,21 @@ local function DrawThreatIndicator()
             if math.abs(angle - g.angle) < 0.3 then
                 g.count = g.count + 1
                 if threat.isDirect then g.hasDirect = true end
+                -- Сохраняем информацию об оружии для отображения (берём первого в группе)
+                if not g.weaponInfo and threat.weaponInfo then
+                    g.weaponInfo = threat.weaponInfo
+                end
                 found = true
                 break
             end
         end
         if not found then
-            table.insert(grouped, {angle = angle, count = 1, hasDirect = threat.isDirect})
+            table.insert(grouped, {
+                angle = angle,
+                count = 1,
+                hasDirect = threat.isDirect,
+                weaponInfo = threat.weaponInfo
+            })
         end
     end
     
@@ -179,6 +289,11 @@ local function DrawThreatIndicator()
         local color = group.hasDirect and config.color_aim or config.color_near
         DrawArc(centerX, centerY, group.angle, color)
         DrawTriangleArrow(centerX, centerY, group.angle, color)
+        
+        -- Отображаем информацию об оружии
+        if group.weaponInfo then
+            DrawWeaponInfo(centerX, centerY, group.angle, group.weaponInfo, color)
+        end
         
         if group.count > 1 then
             local screenAngle = group.angle - math.pi / 2
@@ -195,12 +310,20 @@ local function DrawDebugInfo()
     if not debug_enabled then return end
     local threats = FindThreats()
     surface.SetDrawColor(0,0,0,200)
-    surface.DrawRect(0,0,400,30 + #threats * 22)
+    surface.DrawRect(0,0,550,30 + #threats * 24)
     draw.SimpleText("=== Wall-Aware Threat Detector ===", "Trebuchet24", 10,10, Color(255,255,255))
     for i, t in ipairs(threats) do
         local dist = ply:GetPos():Distance(t.player:GetPos())
-        draw.SimpleText(string.format("%s [%s] - %.0fm", t.player:Nick(), t.isDirect and "DIRECT" or "NEAR", dist), 
-            "Trebuchet24", 10, 30 + i*20, Color(255,180,100))
+        local weaponStr = "No weapon"
+        if t.weaponInfo then
+            local ammoStr = t.weaponInfo.ammo .. "/" .. t.weaponInfo.maxAmmo
+            if t.weaponInfo.hasReserve and t.weaponInfo.ammo == 0 then
+                ammoStr = ammoStr .. " (need reload)"
+            end
+            weaponStr = string.format("%s [%s]", t.weaponInfo.name, ammoStr)
+        end
+        draw.SimpleText(string.format("%s [%s] - %.0fm - %s", t.player:Nick(), t.isDirect and "DIRECT" or "NEAR", dist, weaponStr), 
+            "Trebuchet18", 10, 30 + i*22, Color(255,180,100))
     end
     if #threats == 0 then
         draw.SimpleText("No visible threats", "Trebuchet24", 10, 30, Color(100,255,100))
@@ -215,6 +338,15 @@ local function DrawTest()
     for _, ang in ipairs({-3.14, -1.57, 0, 1.57, 3.14}) do
         DrawArc(cx, cy, ang, Color(100,150,255,100))
         DrawTriangleArrow(cx, cy, ang, Color(100,150,255,150))
+        
+        -- Тестовое отображение оружия
+        local testWeapon = {
+            name = "AK-47",
+            ammo = 30,
+            maxAmmo = 30,
+            hasReserve = false
+        }
+        DrawWeaponInfo(cx, cy, ang, testWeapon, Color(100,150,255,150))
     end
 end
 
@@ -228,5 +360,5 @@ concommand.Add("outofview_test", function() test_mode = not test_mode end)
 print("========================================")
 print("[OutOfView] Loaded - Wall Check Enabled")
 print("  Only shows if enemy has LINE OF SIGHT")
-print("  No reaction through walls!")
+print("  + Shows enemy's active weapon & ammo")
 print("========================================")
