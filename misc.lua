@@ -624,7 +624,7 @@ for i=1,10 do
 	concommand.Add(("job_action"..i), function(lp, cl, args)
 		local job = me:Team()
 		if !known_jobs[job] or !known_jobs[job]["action"..i] then return end
-		known_jobs[job]["action"..i](#args==1 and args[1] or nil)
+		known_jobs[job]["action"..i](lp, cl, args)
 	end)
 end
 print("[Misc] Loaded!")
