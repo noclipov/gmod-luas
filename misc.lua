@@ -51,6 +51,14 @@ local function use(class, silent, give)
     if me:HasWeapon(class) and get_swep(me) ~= class and !silent then notify(sf("%s %s", spawned and "Gave" or "Equipped", class)) end
 	con("use", class)
 end
+local function job_menu()
+	if me:GetUserGroup() ~= "superadmin" then return end
+	CreateDynamicPrompt("Выбор профессии", "Какую профессию сетаем?", {
+		{name="Годжо", callback=function() con("ba", "setjob", me:SteamID(), "Satoru Gojo") end},
+		{name="Агент ЦРУ", callback=function() con("ba", "setjob", me:SteamID(), "Агент ЦРУ") end},
+		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
+	})
+end
 function CreateDynamicPrompt(title, question, buttons, callback)
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
@@ -400,6 +408,7 @@ net.Receive("freports.message", function()
 	if IsValid(freports.a) then freports.a.Chat(tb) end
 end)
 commands = {
+	job_menu = function() job_menu() end,
 	adminmode = function() if known_jobs[me:Team()] == jobs_presets.admin_preset then known_jobs[me:Team()] = last_preset; else last_preset = known_jobs[me:Team()]; known_jobs[me:Team()] = jobs_presets.admin_preset end notify(sf("Adminmode changed to %s", known_jobs[me:Team()] == jobs_presets.admin_preset)) end,
     ent_class = function() local target = get_target(nil, true); copy(target:GetClass()) end,
     ent_mat = function() local target = get_target(nil, true); copy(EyeEnt():GetMaterial()) end,
@@ -456,14 +465,6 @@ local function disguise(job)
 	net.SendToServer()
 	if disguised(me) then say("/job "..team.GetAllTeams()[job].Name) end
 end
-local function job_menu()
-	if me:GetUserGroup() ~= "superadmin" then return end
-	CreateDynamicPrompt("Выбор профессии", "Какую профессию сетаем?", {
-		{name="Годжо", callback=function() con("ba", "setjob", me:SteamID(), "Satoru Gojo") end},
-		{name="Агент ЦРУ", callback=function() con("ba", "setjob", me:SteamID(), "Агент ЦРУ") end},
-		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
-	})
-end
 local function IsCP(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
@@ -510,7 +511,7 @@ jobs_presets = {
 	civil_preset = {
 		action1 = function(arg) con("adminmode") end,
 		action2 = function(arg) act("dance") end,
-		action3 = function(arg) job_menu() end,
+		action3 = function(arg) con("job_menu") end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end con("toggle_convar", "sitting_allow_on_me") end,
 	},
 	mayor_preset = {
