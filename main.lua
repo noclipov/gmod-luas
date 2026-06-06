@@ -7,10 +7,9 @@ concommand.Add("noclipov_load", function()
 		if !file.Exists(path, "DATA") or create then
 			http.Fetch("https://raw.githubusercontent.com/noclipov/gmod-luas/refs/heads/main/"..filename, function(body)
 				file.Write(path:gsub(".lua", ".txt"), body)
-				RunString(body)
 			end, function(err) print(err) end)
 		end
-		RunString(file.Read(path:gsub(".lua", ".txt"), "DATA"))
+		timer.Simple(0.5, function() RunString(file.Read(path:gsub(".lua", ".txt"), "DATA")) end)
 	end
 	local function check_files(create)
 		create = create or false
