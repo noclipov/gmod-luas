@@ -10,7 +10,7 @@ concommand.Add("noclipov_load", function()
 				RunString(body)
 			end, function(err) print(err) end)
 		end
-		RunString(file.Read(path:gsub(".lua", ".txt"), "DATA")
+		RunString(file.Read(path:gsub(".lua", ".txt"), "DATA"))
 	end
 	local function check_files(create)
 		create = create or false
