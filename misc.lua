@@ -559,7 +559,7 @@ jobs_presets = {
 	},
 	admin_preset = {
 		action1 = function(arg) say("!spectate") end, 
-		action2 = function(arg) local target = get_target(args[1]); say("!return "..EyePlayer():SteamID()) end, 
+		action2 = function(arg) local target = get_target(args[1]); say("!return "..target:SteamID()) end, 
 		action3 = function(arg) con("noclip") end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end con("adminmode") end,
 		action5 = function(arg) con("ply_steamid") end,
