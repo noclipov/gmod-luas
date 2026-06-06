@@ -21,8 +21,8 @@ concommand.Add("noclipov_load", function()
 	check_files(true)
 
 	commands = {
-		update_files = function() check_files(true) end,
-		load_file = function(ply, cmd, args) if #args == 1 then load_file("noclipov/"..args[1], args[1]) end end
+		noclipov_reload = function() check_files(true) end,
+		noclipov_loadfile = function(ply, cmd, args) if #args == 1 then load_file("noclipov/"..args[1], args[1]) end end
 	}
 	for cmd,callback in pairs(commands) do
 		concommand.Remove(cmd)

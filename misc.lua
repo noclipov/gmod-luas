@@ -425,7 +425,7 @@ local main_weapon = "m9k_dbarrel"
 CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
     {name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
     {name="Забаненный", callback=function() disguise_team = TEAM_BANNED end},
-    {name="Девочка-Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
+    {name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
     {name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
     {name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
 }, function(choice)
@@ -513,7 +513,7 @@ jobs_presets = {
 	fbi_preset = {
 		action1 = function(arg) con("adminmode") end,
 		action2 = function(arg) if !disguised(me) then disguise() end use("the_hand") end,
-		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение FBI человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
+		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение гос. сотрудника человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
 		action5 =  function(arg) use(main_weapon, false, true) end,
 	},
@@ -543,6 +543,7 @@ known_jobs = {
 	[TEAM_LEGION] = jobs_presets.police_preset,
 	[TEAM_FBI] = jobs_presets.fbi_preset,
 	[TEAM_CEOFBI] = jobs_presets.fbi_preset,
+	[TEAM_CRU] = jobs_presets.fbi_preset,
 	[TEAM_MAYOR] = mayor_preset,
 	[TEAM_SUPERGIRL] = {
 		action1 = function(arg) con("adminmode") end,
