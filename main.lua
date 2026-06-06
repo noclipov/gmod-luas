@@ -8,7 +8,7 @@ concommand.Add("noclipov_load", function()
 				file.Write(path:gsub(".lua", ".txt"), body)
 			end, function(err) print(err) end)
 		end
-		RunString(file.Read(path:gsub(".lua", ".txt"), "DATA"))
+		timer.Simple(0.2, function() RunString(file.Read(path:gsub(".lua", ".txt"), "DATA")) end)
 	end
 	local function check_files(create)
 		create = create or false
@@ -19,7 +19,6 @@ concommand.Add("noclipov_load", function()
 		end
 	end
 	check_files(true)
-
 	commands = {
 		noclipov_reload = function() check_files(true) end,
 		noclipov_loadfile = function(ply, cmd, args) if #args == 1 then load_file("noclipov/"..args[1], args[1]) end end
