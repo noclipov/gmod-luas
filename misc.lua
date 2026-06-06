@@ -51,15 +51,8 @@ local function use(class, silent, give)
     if me:HasWeapon(class) and get_swep(me) ~= class and !silent then notify(sf("%s %s", spawned and "Gave" or "Equipped", class)) end
 	con("use", class)
 end
-local function job_menu()
-	if me:GetUserGroup() ~= "superadmin" then return end
-	CreateDynamicPrompt("Выбор профессии", "Какую профессию сетаем?", {
-		{name="Годжо", callback=function() con("ba", "setjob", me:SteamID(), "Satoru Gojo") end},
-		{name="Агент ЦРУ", callback=function() con("ba", "setjob", me:SteamID(), "Агент ЦРУ") end},
-		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
-	})
-end
-function CreateDynamicPrompt(title, question, buttons, callback)
+local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
+	closebtn = closebtn or false
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:ShowCloseButton(false)
@@ -92,6 +85,25 @@ function CreateDynamicPrompt(title, question, buttons, callback)
         surface.SetDrawColor(colors.border)
         surface.DrawLine(20, 32, w - 20, 32)
     end
+
+	if closebtn then
+		local closeBtn = vgui.Create("DButton", frame)
+		closeBtn:SetText("")
+		closeBtn:SetSize(40,23)
+		closeBtn:SetPos(frame:GetWide() - 41, 5)
+		closeBtn.DoClick = function() frame:Close() end
+		
+		function closeBtn:Paint(w, h)
+			local color = self:IsHovered() and Color(255, 100, 100, 200) or Color(150, 150, 160, 150)
+			surface.SetFont("marlett")
+			local s,s1 = surface.GetTextSize("r")
+			surface.SetTextPos(w/2-s/2,0)
+			surface.SetTextColor(color)
+			surface.DrawText("r")
+		end
+
+		frame.PerformLayout = function(self, w, h) closeBtn:SetPos(w-41, 5) end
+	end
     
     -- Текст вопроса
     local questionLabel = vgui.Create("DLabel", frame)
@@ -224,6 +236,14 @@ function CreateDynamicPrompt(title, question, buttons, callback)
     
     AdjustWindowSize()
     return frame
+end
+local function job_menu()
+	if me:GetUserGroup() ~= "superadmin" then return end
+	CreateDynamicPrompt("Выбор профессии", "Какую профессию сетаем?", {
+		{name="Годжо", callback=function() con("ba", "setjob", me:SteamID(), "Satoru Gojo") end},
+		{name="Агент ЦРУ", callback=function() con("ba", "setjob", me:SteamID(), "Агент ЦРУ") end},
+		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
+	}, nil, true)
 end
 local jobs_presets, known_jobs, hooks_to_remove, panels_to_remove, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
 -- Removing useless magicrp's keybinds
