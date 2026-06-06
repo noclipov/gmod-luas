@@ -512,7 +512,7 @@ jobs_presets = {
 	},
 	fbi_preset = {
 		action1 = function(arg) con("adminmode") end,
-		action2 = function(arg) if !disguised(me) then disguise() end use("the_hand") end,
+		action2 = function(arg) if !disguised(me) then disguise() else use("the_hand") end end,
 		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say("/me | Предъявил удостоверение гос. сотрудника человеку напротив."); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
 		action5 =  function(arg) use(main_weapon, false, true) end,
