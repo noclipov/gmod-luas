@@ -11,8 +11,10 @@ concommand.Add("noclipov_load", function()
 		end
 		timer.Simple(0.5, function() RunString(file.Read(path:gsub(".lua", ".txt"), "DATA")) end)
 	end
-	local function check_files(create)
+	local function check_files(create, self)
 		create = create or false
+		self = self or false
+		if self then table.insert(files, "main.lua") end
 		if not file.IsDir("noclipov", "DATA") then file.CreateDir("noclipov", "DATA") end
 		for _, filename in pairs(files) do
 			local path ="noclipov/"..filename
@@ -21,7 +23,7 @@ concommand.Add("noclipov_load", function()
 	end
 	check_files(true)
 	commands = {
-		noclipov_reload = function() check_files(true) end,
+		noclipov_reload = function() check_files(true, true) end,
 		noclipov_loadfile = function(ply, cmd, args) if #args == 1 then load_file("noclipov/"..args[1], args[1], true) end end
 	}
 	for cmd,callback in pairs(commands) do
