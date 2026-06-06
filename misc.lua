@@ -278,12 +278,13 @@ local function DrawBox(x,y,w,h,col,col_o)
 	surface.SetDrawColor(col_o)
 	surface.DrawOutlinedRect(x,y,w,h)
 end
+local blur = Material("pp/blurscreen")
 local function DrawBlur(panel, amount)
 	local x, y = panel:LocalToScreen(0, 0)
 	local scrW, scrH = ScrW(), ScrH()
 
 	surface.SetDrawColor(255, 255, 255)
-	surface.SetMaterial(Material("pp/blurscreen"))
+	surface.SetMaterial(blur)
 	for i = 1, 3 do
 		blur:SetFloat("$blur", (i / 3) * (amount or 6))
 		blur:Recompute()
