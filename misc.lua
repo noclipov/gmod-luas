@@ -43,11 +43,10 @@ end
 local function act(emote)
     con("act2", emote)
 end
-local function use(class, silent, give)
+local function use(class, silent)
 	silent = silent or false
-	give = give or false
 	local spawned = false
-	if !me:HasWeapon(class) and give then con("gm_giveswep", class); spawned = true end
+	if !me:HasWeapon(class) then con("gm_giveswep", class); spawned = true end
     if me:HasWeapon(class) and get_swep(me) ~= class and !silent then notify(sf("%s %s", spawned and "Gave" or "Equipped", class)) end
 	con("use", class)
 end
@@ -60,16 +59,12 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
     frame:SetSize(500, 200)
     frame:Center()
     frame:MakePopup()
-    
-    -- Цветовая схема
     local colors = {
         bg = Color(30, 30, 35, 245),
         text = Color(240, 240, 245, 255),
         textMuted = Color(180, 180, 200, 255),
         border = Color(50, 50, 60, 255),
     }
-    
-    -- Отрисовка окна
     function frame:Paint(w, h)
         draw.RoundedBox(12, 0, 0, w, h, colors.bg)
         draw.RoundedBox(2, 20, h - 2, w - 40, 1, colors.border)
@@ -85,7 +80,6 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
         surface.SetDrawColor(colors.border)
         surface.DrawLine(20, 32, w - 20, 32)
     end
-
 	if closebtn then
 		local closeBtn = vgui.Create("DButton", frame)
 		closeBtn:SetText("")
@@ -104,8 +98,6 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
 
 		frame.PerformLayout = function(self, w, h) closeBtn:SetPos(w-41, 5) end
 	end
-    
-    -- Текст вопроса
     local questionLabel = vgui.Create("DLabel", frame)
     questionLabel:SetText(question)
     questionLabel:SetFont("PromptQuestionFont")
@@ -114,14 +106,10 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
     questionLabel:SetAutoStretchVertical(true)
     questionLabel:SetSize(frame:GetWide() - 40, 60)
     questionLabel:SetPos(20, 45)
-    
-    -- Панель для кнопок
     local buttonPanel = vgui.Create("DPanel", frame)
     buttonPanel:SetPos(20, frame:GetTall() - 65)
     buttonPanel:SetSize(frame:GetWide() - 40, 50)
     function buttonPanel:Paint() end
-    
-    -- Кэш для шрифтов разных размеров
     local fontCache = {}
     local function GetFontOfSize(size)
         local fontName = "PromptButtonFont_" .. size
@@ -137,8 +125,6 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
         end
         return fontCache[size]
     end
-    
-    -- Функция для получения подходящего размера шрифта
     local function GetOptimalFontSize(text, maxWidth, maxHeight)
         for size = 14, 8, -1 do
             local fontName = GetFontOfSize(size)
@@ -441,7 +427,7 @@ commands = {
 	ply_swep_ammo1 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Primary.Ammo) end,
 	ply_swep_ammo2 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Secondary.Ammo) end,
 	ply_job = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("%s является %s (%s).", target:Name(), target:getDarkRPVar( "job" ), team.GetName(target:Team()))) end,
-	ply_job_cmd = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована команда для профессии игрока \"%s\".", target:Name())); copy(target:getJobTable().command) end,
+	ply_job_cmd = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована команда для профессии игрока \"%s\".", target:Name())); copy(target::GetTeamTable().command) end,
 	ply_nick = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирован никнейм игрока \"%s\".", target:Name())); copy(target:Name()) end,
 	ply_usergroup = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована привилегия игрока \"%s\".", target:Name())); copy(target:GetUserGroup()) end,
 	ply_steamid = function() local target = get_target(); notify(sf("Скопирован steamid игрока \"%s\".", target:Name())); copy(target:SteamID()) end,
@@ -463,7 +449,8 @@ CreateDynamicPrompt("Выбор маскировки", "Под какую про
 }, function(choice)
     CreateDynamicPrompt("Выбор оружия", "Каким основным оружием будем пользоваться?", {
 		{name="Дабла", callback=function() main_weapon = "m9k_dbarrel" end},
-		{name="Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
+		{name="Бландергат", callback=function() main_weapon = "deika_blundergat" end},
+		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
 	})
 end)
 local function tasered(target)
@@ -476,17 +463,23 @@ local function handcuffed_p(target)
 	if !IsValid(target) then return end
 	return target:GetNWBool("isHandcuffed")
 end
+local function can_disguise(target)
+	target = target or EyePlayer()
+	if !IsValid(target) then return end
+	return target:GetTeamTable().candisguise
+end
 local function disguised(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
 	return target:IsDisguised()
 end
 local function disguise(job)
+	if !can_disguise(me) then return end
 	job = job or disguise_team or TEAM_HOBO
 	net.Start("PlayerDisguise")
 	net.WriteInt(job, 8)
 	net.SendToServer()
-	if disguised(me) then say("/job "..team.GetAllTeams()[job].Name) end
+	timer.Simple(0.2, function() if disguised(me) then say("/job "..me:GetJobTable().name) end end)
 end
 local function IsCP(target)
 	target = target or EyePlayer()
@@ -520,16 +513,16 @@ end
 jobs_presets = {
 	crime_preset = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
-		action2 = function(ply, cmd, args) use("the_hand", false, true) end, 
+		action2 = function(ply, cmd, args) use("the_hand") end, 
 		action3 = function(ply, cmd, args) use("moneychecker"); use("swep_pickpocket") end,
 		action4 =  function(ply, cmd, args) if get_swep(me) == "the_hand" then return end convar_toggle("sitting_allow_on_me") end,
-		action5 =  function(ply, cmd, args) use(main_weapon, false, true) end,
+		action5 =  function(ply, cmd, args) use(main_weapon) end,
 	},
 	police_preset = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
-		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
+		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
-		action5 =  function(ply, cmd, args) use(main_weapon, false, true) end,
+		action5 =  function(ply, cmd, args) use(main_weapon) end,
 	},
 	civil_preset = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
@@ -545,17 +538,17 @@ jobs_presets = {
 	},
 	fbi_preset = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
-		action2 = function(ply, cmd, args) if !disguised(me) then disguise() else use("the_hand", false, true) end end,
-		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") else say(sf("/me | Предъявил удостоверение(%s) человеку напротив.", team.GetName(me:Team()))); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
+		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("the_hand") end end,
+		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") else say(sf("/me | Предъявил удостоверение(%s) человеку напротив.", team.GetName(me:Team()))); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
-		action5 =  function(ply, cmd, args) use(main_weapon, false, true) end,
+		action5 =  function(ply, cmd, args) use(main_weapon) end,
 	},
 	hitman_preset = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
-		action2 = function(ply, cmd, args) if !disguised(me) then disguise() end end,
-		action3 = function(ply, cmd, args) use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") end,
-		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("m9k_barret_m82")end,
-		action5 = function(ply, cmd, args) use(main_weapon, false, true) end, 
+		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("weapon_nahida_e") end end,
+		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
+		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,
+		action5 = function(ply, cmd, args) use(main_weapon) end, 
 	},
 	admin_preset = {
 		action1 = function(ply, cmd, args) say("!spectate") end, 
@@ -586,8 +579,9 @@ known_jobs = {
 		action5 = function(arg) use(main_weapon, false, true) end, 
 	},
 	-- Hitmans
-	[TEAM_VIPER] = hitman_preset,
 	[TEAM_HITMAN] = hitman_preset,
+	[TEAM_VIPER] = hitman_preset,
+	[TEAM_CHROMIUM] = hitman_preset,
 	-- Maniacs
 	[TEAM_JASON] = {
 		action1 = function(arg) con("adminmode") end,
