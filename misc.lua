@@ -587,11 +587,6 @@ known_jobs = {
 	[TEAM_VIPER] =  preset("hitman"),
 	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,}),
 	-- Maniacs
-	[TEAM_JASON] = {
-		action1 = function(arg) con("adminmode") end,
-		action2 = function(arg) if !disguised(me) then disguise() else use("csgo_m9_crimsonwebs") end end,
-		action3 = function(arg) say("Лицом к стене/в пол! 1... 2... 3...") end,
-	},
 	-- Crime
 	[TEAM_MAFIA] = preset("crime"),
 	[TEAM_EMAFIA] = preset("crime"),
