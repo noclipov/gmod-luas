@@ -449,6 +449,7 @@ CreateDynamicPrompt("Выбор маскировки", "Под какую про
 }, function(choice)
     CreateDynamicPrompt("Выбор оружия", "Каким основным оружием будем пользоваться?", {
 		{name="Дабла", callback=function() main_weapon = "m9k_dbarrel" end},
+		{name="Драгон Дигл", callback=function() main_weapon = "pist_deagon" end},
 		{name="Бландергат", callback=function() main_weapon = "deika_blundergat" end},
 		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
 	})
@@ -585,7 +586,7 @@ known_jobs = {
 	-- Hitmans
 	[TEAM_HITMAN] = preset("hitman", {action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,}),
 	[TEAM_VIPER] =  preset("hitman"),
-	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,}),
+	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) use("csgo_butterfly_slaughter") end,}),
 	-- Maniacs
 	-- Crime
 	[TEAM_MAFIA] = preset("crime"),
