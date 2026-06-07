@@ -6,6 +6,7 @@ local sf = string.format
 local me = LocalPlayer()
 local copy = SetClipboardText
 local con = RunConsoleCommand
+local jobs_presets, known_jobs, hooks_to_remove, panels_callback, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
 local function EyeEnt()
     local ent = me:GetEyeTrace().Entity or me
 	return ent
@@ -231,7 +232,16 @@ local function job_menu()
 		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
 	}, nil, true)
 end
-local jobs_presets, known_jobs, hooks_to_remove, panels_callback, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
+local function preset(actual_preset, changed_binds)
+	if !jobs_presets[actual_preset] then return end
+	local preset = jobs_presets[actual_preset] 
+	if changed_binds then
+		for action, callback in pairs(changed_binds) do
+			preset[action] = callback
+		end
+	end
+	return preset
+end
 -- Removing useless magicrp's keybinds
 hooks_to_remove = {
     ["Think"] = {"HandleF11UniversalHUD", "rp.KeyBinds.Think"},
@@ -418,9 +428,19 @@ net.Receive("freports.message", function()
 	end
 	if IsValid(freports.a) then freports.a.Chat(tb) end
 end)
+local function toggle_preset(target_preset, name)
+	if last_preset then
+		known_jobs[me:Team()] = last_preset
+		last_preset = nil
+	else
+		known_jobs[me:Team()] = target_preset
+		last_preset = known_jobs[me:Team()]
+	end 
+	notify(sf("%s changed to %s", name, last_preset ~= nil))
+end
 commands = {
+	adminmode = function() toggle_preset(preset("admin"), "Admin-mode") end,
 	job_menu = function() job_menu() end,
-	adminmode = function() if known_jobs[me:Team()] == jobs_presets.admin then known_jobs[me:Team()] = last_preset; else last_preset = known_jobs[me:Team()]; known_jobs[me:Team()] = jobs_presets.admin end notify(sf("Adminmode changed to %s", known_jobs[me:Team()] == jobs_presets.admin)) end,
     ent_class = function() local target = get_target(nil, true); copy(target:GetClass()) end,
     ent_mat = function() local target = get_target(nil, true); copy(EyeEnt():GetMaterial()) end,
     ent_model = function() local target = get_target(nil, true); copy(EyeEnt():GetModel()) end,
@@ -514,6 +534,7 @@ for Event, Data in pairs(hooks) do
 end
 jobs_presets = {
 	crime = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) use("the_hand") end, 
 		action3 = function(ply, cmd, args) use("moneychecker") end,
@@ -522,6 +543,7 @@ jobs_presets = {
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	police = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
@@ -529,6 +551,7 @@ jobs_presets = {
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	civil = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) act("dance") end,
 		action3 = function(ply, cmd, args) con("job_menu") end,
@@ -536,6 +559,7 @@ jobs_presets = {
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	mayor = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) say("/lottery 1e6") end,
 		action3 = function(ply, cmd, args) say("/lockdown ПНН") end,
@@ -543,6 +567,7 @@ jobs_presets = {
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	fbi = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("the_hand") end end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") else say(sf("/me | Предъявил удостоверение(%s) человеку напротив.", team.GetName(me:Team()))); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
@@ -550,7 +575,17 @@ jobs_presets = {
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
+	maniac = {
+		action0 = function(ply, cmd, args) use("keys") end,
+		action1 = function(ply, cmd, args) con("adminmode") end,
+		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("csgo_butterfly_slaughter") end end,
+		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
+		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,
+		action5 = function(ply, cmd, args) use(main_weapon) end, 
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
+	},
 	hitman = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("weapon_nahida_e") end end,
 		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
@@ -559,23 +594,15 @@ jobs_presets = {
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	admin = {
+		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) say("!spectate") end, 
 		action2 = function(ply, cmd, args) local target = get_target(args[1]); say("!return "..target:SteamID()) end, 
 		action3 = function(ply, cmd, args) con("noclip") end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end con("adminmode") end,
 		action5 = function(ply, cmd, args) con("ply_steamid") end,
+		action6 =  function(ply, cmd, args) use("weapon_physgun") end,
 	},
 }
-local function preset(actual_preset, changed_binds)
-	if !jobs_presets[actual_preset] then return end
-	local preset = jobs_presets[actual_preset] 
-	if changed_binds then
-		for action, callback in pairs(changed_binds) do
-			preset[action] = callback
-		end
-	end
-	return preset
-end
 known_jobs = {
 	-- Police
 	[TEAM_POLICE] = preset("police"),
@@ -593,7 +620,7 @@ known_jobs = {
 	-- Hitmans
 	[TEAM_HITMAN] = preset("hitman", {action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,}),
 	[TEAM_VIPER] =  preset("hitman"),
-	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) use("csgo_butterfly_slaughter") end,}),
+	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) toggle_preset(preset("maniac"), "Maniac-mode") end,}),
 	-- Maniacs
 	-- Crime
 	[TEAM_MAFIA] = preset("crime"),
@@ -617,7 +644,7 @@ known_jobs = {
 	[TEAM_BANNED] = preset("civil", {action3 = nil}),
 	[TEAM_ADMIN] = preset("admin"),
 }
-for i=1,10 do
+for i=0,10 do
 	concommand.Remove(("job_action"..i))
 	concommand.Add(("job_action"..i), function(lp, cl, args)
 		local job = me:Team()
