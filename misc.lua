@@ -418,7 +418,7 @@ net.Receive("freports.message", function()
 end)
 commands = {
 	job_menu = function() job_menu() end,
-	adminmode = function() if known_jobs[me:Team()] == jobs_presets.admin_preset then known_jobs[me:Team()] = last_preset; else last_preset = known_jobs[me:Team()]; known_jobs[me:Team()] = jobs_presets.admin_preset end notify(sf("Adminmode changed to %s", known_jobs[me:Team()] == jobs_presets.admin_preset)) end,
+	adminmode = function() if known_jobs[me:Team()] == jobs_presets.admin then known_jobs[me:Team()] = last_preset; else last_preset = known_jobs[me:Team()]; known_jobs[me:Team()] = jobs_presets.admin end notify(sf("Adminmode changed to %s", known_jobs[me:Team()] == jobs_presets.admin)) end,
     ent_class = function() local target = get_target(nil, true); copy(target:GetClass()) end,
     ent_mat = function() local target = get_target(nil, true); copy(EyeEnt():GetMaterial()) end,
     ent_model = function() local target = get_target(nil, true); copy(EyeEnt():GetModel()) end,
@@ -511,46 +511,46 @@ for Event, Data in pairs(hooks) do
 	hook.Add(Event, Data.name, Data.callback)
 end
 jobs_presets = {
-	crime_preset = {
+	crime = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) use("the_hand") end, 
-		action3 = function(ply, cmd, args) use("moneychecker"); use("swep_pickpocket") end,
+		action3 = function(ply, cmd, args) use("moneychecker") end,
 		action4 =  function(ply, cmd, args) if get_swep(me) == "the_hand" then return end convar_toggle("sitting_allow_on_me") end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
 	},
-	police_preset = {
+	police = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
 	},
-	civil_preset = {
+	civil = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) act("dance") end,
 		action3 = function(ply, cmd, args) con("job_menu") end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end con("toggle_convar", "sitting_allow_on_me") end,
 	},
-	mayor_preset = {
+	mayor = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) say("/lottery 1e6") end,
 		action3 = function(ply, cmd, args) say("/lockdown ПНН") end,
 		action5 = function(ply, cmd, args) say("/givelicense") end, 
 	},
-	fbi_preset = {
+	fbi = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("the_hand") end end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") else say(sf("/me | Предъявил удостоверение(%s) человеку напротив.", team.GetName(me:Team()))); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
 	},
-	hitman_preset = {
+	hitman = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("weapon_nahida_e") end end,
 		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,
 		action5 = function(ply, cmd, args) use(main_weapon) end, 
 	},
-	admin_preset = {
+	admin = {
 		action1 = function(ply, cmd, args) say("!spectate") end, 
 		action2 = function(ply, cmd, args) local target = get_target(args[1]); say("!return "..target:SteamID()) end, 
 		action3 = function(ply, cmd, args) con("noclip") end,
@@ -558,30 +558,34 @@ jobs_presets = {
 		action5 = function(ply, cmd, args) con("ply_steamid") end,
 	},
 }
+local function preset(actual_preset, changed_binds)
+	if !jobs_presets[actual_preset] then return end
+	local preset = jobs_presets[actual_preset] 
+	if changed_binds then
+		for action, callback in pairs(changed_binds) do
+			preset[action] = callback
+		end
+	end
+	return preset
+end
 known_jobs = {
 	-- Police
-	[TEAM_POLICE] = jobs_presets.police_preset,
-	[TEAM_POLICE2] = jobs_presets.police_preset,
-	[TEAM_CHIEF] = jobs_presets.police_preset,
-	[TEAM_SWAT] = jobs_presets.police_preset,
-	[TEAM_LSWAT] = jobs_presets.police_preset,
-	[TEAM_BULL] = jobs_presets.police_preset,
-	[TEAM_LEGION] = jobs_presets.police_preset,
-	[TEAM_FBI] = jobs_presets.fbi_preset,
-	[TEAM_CEOFBI] = jobs_presets.fbi_preset,
-	[TEAM_CRU] = jobs_presets.fbi_preset,
-	[TEAM_MAYOR] = mayor_preset,
-	[TEAM_SUPERGIRL] = {
-		action1 = function(arg) con("adminmode") end,
-		action2 = function(arg) use("sm_weapon_homelander") end,
-		action3 = function(arg) if !IsCP() then use(main_weapon, false, true); say("Лицом к стене/в пол! 1... 2... 3...") end end,
-		action4 = function(arg) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
-		action5 = function(arg) use(main_weapon, false, true) end, 
-	},
+	[TEAM_POLICE] = preset("police"),
+	[TEAM_POLICE2] = preset("police"),
+	[TEAM_CHIEF] = preset("police"),
+	[TEAM_SWAT] = preset("police"),
+	[TEAM_LSWAT] = preset("police"),
+	[TEAM_BULL] = preset("police"),
+	[TEAM_LEGION] = preset("police"),
+	[TEAM_SUPERGIRL] = preset("police", {action2 = function(arg) use("sm_weapon_homelander") end,}),
+	[TEAM_FBI] = preset("fbi"),
+	[TEAM_CEOFBI] = preset("fbi"),
+	[TEAM_CRU] = preset("fbi"),
+	[TEAM_MAYOR] = preset("mayor"),
 	-- Hitmans
-	[TEAM_HITMAN] = hitman_preset,
-	[TEAM_VIPER] = hitman_preset,
-	[TEAM_CHROMIUM] = hitman_preset,
+	[TEAM_HITMAN] = preset("hitman", {action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,}),
+	[TEAM_VIPER] =  preset("hitman"),
+	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,}),
 	-- Maniacs
 	[TEAM_JASON] = {
 		action1 = function(arg) con("adminmode") end,
@@ -589,29 +593,26 @@ known_jobs = {
 		action3 = function(arg) say("Лицом к стене/в пол! 1... 2... 3...") end,
 	},
 	-- Crime
-	[TEAM_MAFIA] = jobs_presets.crime_preset,
-	[TEAM_EMAFIA] = jobs_presets.crime_preset,
-	[TEAM_MOB] = jobs_presets.crime_preset,
-	[TEAM_CYBER] = jobs_presets.crime_preset,
-	[TEAM_LORDE] = jobs_presets.crime_preset,
-	[TEAM_KILLA] = jobs_presets.crime_preset,
-	[TEAM_VOR] = jobs_presets.crime_preset,
+	[TEAM_MAFIA] = preset("crime"),
+	[TEAM_EMAFIA] = preset("crime"),
+	[TEAM_MOB] = preset("crime"),
+	[TEAM_CYBER] = preset("crime"),
+	[TEAM_LORDE] = preset("crime"),
+	[TEAM_KILLA] = preset("crime"),
+	[TEAM_VOR] = preset("crime", {action3 = function(ply, cmd, args) use("swep_pickpocket") end,}),
+	[TEAM_REBECCA] = preset("crime", {action2 = function(ply, cmd, args) use("weapon_blanchammer") end,}),
 	-- Civil
-	[TEAM_CASINO] = jobs_presets.civil_preset,
-	[TEAM_GUN] = jobs_presets.civil_preset,
-	[TEAM_DOG] = jobs_presets.civil_preset,
-	[TEAM_NARKOS] = jobs_presets.civil_preset,
-	[TEAM_MINER] = jobs_presets.civil_preset,
-	[TEAM_CITIZEN] = jobs_presets.civil_preset,
-	[TEAM_GUARD] = jobs_presets.civil_preset,
-	[TEAM_HOBO] = jobs_presets.civil_preset,
+	[TEAM_CASINO] = preset("civil"),
+	[TEAM_GUN] = preset("civil"),
+	[TEAM_DOG] = preset("civil"),
+	[TEAM_NARKOS] = preset("civil"),
+	[TEAM_MINER] = preset("civil"),
+	[TEAM_CITIZEN] = preset("civil"),
+	[TEAM_GUARD] = preset("civil"),
+	[TEAM_HOBO] = preset("civil"),
 	-- Other
-	[TEAM_BANNED] = {
-		action1 = function(arg) con("adminmode") end,
-		action2 = function(arg) act("dance") end,
-		action4 = function(arg) con("toggle_convar", "sitting_allow_on_me") end,
-	},
-	[TEAM_ADMIN] = jobs_presets.admin_preset,
+	[TEAM_BANNED] = preset("civil", {action3 = nil}),
+	[TEAM_ADMIN] = preset("admin"),
 }
 for i=1,10 do
 	concommand.Remove(("job_action"..i))
