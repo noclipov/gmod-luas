@@ -430,8 +430,10 @@ net.Receive("freports.message", function()
 end)
 local last_preset_change_time = CurTime()
 local function toggle_preset(target_preset, name)
+	print(last_preset_change_time, CurTime())
 	if last_preset_change_time<=CurTime() then
 		last_preset_change_time = CurTime()+2
+		print(last_preset_change_time, CurTime())
 		if last_preset then
 			known_jobs[me:Team()] = last_preset
 			last_preset = nil
