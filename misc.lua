@@ -579,9 +579,6 @@ jobs_presets = {
 		action0 = function(ply, cmd, args) use("keys") end,
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("csgo_butterfly_slaughter") end end,
-		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
-		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,
-		action5 = function(ply, cmd, args) use(main_weapon) end, 
 		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	hitman = {
@@ -620,7 +617,7 @@ known_jobs = {
 	-- Hitmans
 	[TEAM_HITMAN] = preset("hitman", {action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,}),
 	[TEAM_VIPER] =  preset("hitman"),
-	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) toggle_preset(preset("maniac"), "Maniac-mode") end,}),
+	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) toggle_preset(preset("maniac", {action4=toggle_preset, action5=function() use("weapon_camo") end}), "Maniac-mode"); use("csgo_butterfly_slaughter") end,}),
 	-- Maniacs
 	-- Crime
 	[TEAM_MAFIA] = preset("crime"),
