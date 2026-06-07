@@ -433,8 +433,8 @@ local function toggle_preset(target_preset, name)
 		known_jobs[me:Team()] = last_preset
 		last_preset = nil
 	else
-		known_jobs[me:Team()] = target_preset
 		last_preset = known_jobs[me:Team()]
+		known_jobs[me:Team()] = target_preset
 	end 
 	notify(sf("%s changed to %s", name, last_preset ~= nil))
 end
