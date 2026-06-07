@@ -231,20 +231,22 @@ local function job_menu()
 		{name="Супер Гёрл", callback=function() con("ba", "setjob", me:SteamID(), "Супергёрл") end},
 	}, nil, true)
 end
-local jobs_presets, known_jobs, hooks_to_remove, panels_to_remove, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
+local jobs_presets, known_jobs, hooks_to_remove, panels_callback, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
 -- Removing useless magicrp's keybinds
 hooks_to_remove = {
     ["Think"] = {"HandleF11UniversalHUD", "rp.KeyBinds.Think"},
     ["PreRender"] = {"BATTLEPASS_F7", "MagicArena::BindMenu", "ToggleHelpHints", "MB_OpenBonuses", "BindCrafts"}
 }
-panels_to_remove = {
-	["hud.task"] = true
+panels_callback = {
+	["hud.task"] = function(panel) panel:Remove() end,
+	["hud.stats"] = function(panel) panel:Remove() end,
+	["donate.bonus"] = function(panel) panel:Remove() end,
 }
 for Event, Hooks in pairs(hooks_to_remove) do
     for _, Name in pairs(Hooks) do hook.Remove(Event, Name) end
 end
 for _, panel in pairs(vgui.GetAll()) do
-    if panel and panel.GetName then if panels_to_remove[panel:GetName()] then panel:Remove() end end
+    if panel and panel.GetName then if panels_callback[panel:GetName()] then panels_callback[panel:GetName()](panel) end end
 end
 local tallbar = ScrH() * .02314815
 local tallbar_c = tallbar * .5
@@ -442,7 +444,6 @@ local disguise_team = TEAM_SATORU
 local main_weapon = "m9k_dbarrel"
 CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
     {name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
-    {name="Забаненный", callback=function() disguise_team = TEAM_BANNED end},
     {name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
     {name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
     {name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
@@ -518,24 +519,28 @@ jobs_presets = {
 		action3 = function(ply, cmd, args) use("moneychecker") end,
 		action4 =  function(ply, cmd, args) if get_swep(me) == "the_hand" then return end convar_toggle("sitting_allow_on_me") end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	police = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	civil = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) act("dance") end,
 		action3 = function(ply, cmd, args) con("job_menu") end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end con("toggle_convar", "sitting_allow_on_me") end,
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	mayor = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
 		action2 = function(ply, cmd, args) say("/lottery 1e6") end,
 		action3 = function(ply, cmd, args) say("/lockdown ПНН") end,
 		action5 = function(ply, cmd, args) say("/givelicense") end, 
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	fbi = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
@@ -543,6 +548,7 @@ jobs_presets = {
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") else say(sf("/me | Предъявил удостоверение(%s) человеку напротив.", team.GetName(me:Team()))); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	hitman = {
 		action1 = function(ply, cmd, args) con("adminmode") end,
@@ -550,6 +556,7 @@ jobs_presets = {
 		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,
 		action5 = function(ply, cmd, args) use(main_weapon) end, 
+		action6 =  function(ply, cmd, args) use("weapon_taser") end,
 	},
 	admin = {
 		action1 = function(ply, cmd, args) say("!spectate") end, 
