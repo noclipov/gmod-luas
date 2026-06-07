@@ -617,7 +617,7 @@ known_jobs = {
 	-- Hitmans
 	[TEAM_HITMAN] = preset("hitman", {action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,}),
 	[TEAM_VIPER] =  preset("hitman"),
-	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) toggle_preset(preset("maniac", {action4=toggle_preset, action5=function() use("weapon_camo") end}), "Maniac-mode"); use("csgo_butterfly_slaughter") end,}),
+	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3 = function(ply, cmd, args) toggle_preset(preset("maniac", {action4=toggle_preset(nil, "Maniac-mode"), action5=function() use("weapon_camo") end}), "Maniac-mode"); use("csgo_butterfly_slaughter") end,}),
 	-- Maniacs
 	-- Crime
 	[TEAM_MAFIA] = preset("crime"),
