@@ -431,7 +431,7 @@ end)
 local last_preset_change_time = CurTime()
 local function toggle_preset(target_preset, name)
 	if last_preset_change_time<=CurTime() then
-		last_preset_change_time = CurTime()+1
+		last_preset_change_time = CurTime()+2
 		if last_preset then
 			known_jobs[me:Team()] = last_preset
 			last_preset = nil
