@@ -427,7 +427,7 @@ commands = {
 	ply_swep_ammo1 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Primary.Ammo) end,
 	ply_swep_ammo2 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Secondary.Ammo) end,
 	ply_job = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("%s является %s (%s).", target:Name(), target:getDarkRPVar( "job" ), team.GetName(target:Team()))) end,
-	ply_job_cmd = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована команда для профессии игрока \"%s\".", target:Name())); copy(target::GetTeamTable().command) end,
+	ply_job_cmd = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована команда для профессии игрока \"%s\".", target:Name())); copy(target:GetTeamTable().command) end,
 	ply_nick = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирован никнейм игрока \"%s\".", target:Name())); copy(target:Name()) end,
 	ply_usergroup = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована привилегия игрока \"%s\".", target:Name())); copy(target:GetUserGroup()) end,
 	ply_steamid = function() local target = get_target(); notify(sf("Скопирован steamid игрока \"%s\".", target:Name())); copy(target:SteamID()) end,
