@@ -468,19 +468,6 @@ for cmd,callback in pairs(commands) do
 end
 local disguise_team = TEAM_SATORU
 local main_weapon = "m9k_dbarrel"
-CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
-    {name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
-    {name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
-    {name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
-    {name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
-}, function(choice)
-    CreateDynamicPrompt("Выбор оружия", "Каким основным оружием будем пользоваться?", {
-		{name="Дабла", callback=function() main_weapon = "m9k_dbarrel" end},
-		{name="Драгон Дигл", callback=function() main_weapon = "pist_deagon" end},
-		{name="Бландергат", callback=function() main_weapon = "deika_blundergat" end},
-		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
-	})
-end)
 local function tasered(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
@@ -514,11 +501,41 @@ local function IsCP(target)
 	if !IsValid(target) then return end
 	return rp.CivilProtection[target:Team()]
 end
+local function disguise_menu(callback)
+	if !can_disguise(me) then return end
+	if disguised(me) then
+		local cur_dis = me:GetJobTable()
+		disguise_team=cur_dis.team
+		print("Disguise was set to "..cur_dis.name)
+		callback()
+		return
+	end
+	local insta_disguise = me:GetVelocity():Length() > 2
+	if !insta_disguise then
+		CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
+			{name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
+			{name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
+			{name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
+			{name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
+		}, function() disguise(disguise_team); if callback then callback() end end, false)
+	else
+		disguise(disguise_team)
+	end
+end
+local function weapon_menu(callback)
+	CreateDynamicPrompt("Выбор оружия", "Каким основным оружием будем пользоваться?", {
+		{name="Дабла", callback=function() main_weapon = "m9k_dbarrel" end},
+		{name="Драгон Дигл", callback=function() main_weapon = "pist_deagon" end},
+		{name="Бландергат", callback=function() main_weapon = "deika_blundergat" end},
+		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
+	}, function() use(main_weapon, true); use("keys", true) if callback then callback() end end, false)
+end
+disguise_menu(weapon_menu)
 hooks = {
 	KeyPress = {name="CuffsToArrest", callback = function( ply, key )
 		if key == IN_ATTACK then
 			if !EyePlayer() then return end
-			if known_jobs[me:Team()] == jobs_presets.police_preset or known_jobs[me:Team()] == jobs_presets.fbi_preset then
+			if known_jobs[me:Team()] == preset("police") or known_jobs[me:Team()] == preset("fbi") then
 				if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
 				elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
 			end
@@ -527,7 +544,7 @@ hooks = {
 	KeyRelease = {name="CuffsToArrest", callback = function( ply, key )
 		if key == IN_ATTACK then
 			if !EyePlayer() then return end
-			if known_jobs[me:Team()] == jobs_presets.police_preset or known_jobs[me:Team()] == jobs_presets.fbi_preset then
+			if known_jobs[me:Team()] == preset("police") or known_jobs[me:Team()] == preset("fbi") then
 				if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
 				elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
 			end
@@ -551,6 +568,7 @@ jobs_presets = {
 	police = {
 		action0 = function(ply, cmd, args) use("keys", true) end,
 		action1 = function(ply, cmd, args) toggle_preset(preset("admin"), "Admin-mode") end,
+		action2 = function(ply, cmd, args) use("the_hand") end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs") end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,
@@ -575,7 +593,7 @@ jobs_presets = {
 	fbi = {
 		action0 = function(ply, cmd, args) use("keys", true) end,
 		action1 = function(ply, cmd, args) toggle_preset(preset("admin"), "Admin-mode") end,
-		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("the_hand") end end,
+		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise_menu() else use("the_hand") end end,
 		action3 = function(ply, cmd, args) if !IsCP() then use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") else say(sf("/me | Предъявил удостоверение(%s) человеку напротив.", team.GetName(me:Team()))); use("handcuffs", true) timer.Simple(0.7, function() use("keys", true) end) end end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("handcuffs")end,
 		action5 =  function(ply, cmd, args) use(main_weapon) end,

@@ -1,5 +1,6 @@
 concommand.Remove("noclipov_load")
 concommand.Add("noclipov_load", function()
+	local commands
 	local files = {"editor.lua", "logs.lua", "misc.lua"}
 	local function load_file(path, filename, create)
 		create = create or false
@@ -9,7 +10,7 @@ concommand.Add("noclipov_load", function()
 				file.Write(path:gsub(".lua", ".txt"), body)
 			end, function(err) print(err) end)
 		end
-		timer.Simple(0.5, function() RunString(file.Read(path:gsub(".lua", ".txt"), "DATA")) end)
+		timer.Simple(1, function() RunString(file.Read(path:gsub(".lua", ".txt"), "DATA")) end)
 	end
 	local function check_files(create)
 		create = create or false
