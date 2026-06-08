@@ -16,9 +16,10 @@ local function EyePlayer()
 	if !target:IsPlayer() then return end
 	return target
 end
-local function get_target(steam_id, ent)
+local function get_target(steam_id, ent, fallback_to_self)
 	ent = ent or false
-	return steam_id and player.GetBySteamID(steam_id) or ent and EyeEnt() or !ent and EyePlayer() or me
+	fallback_to_self = fallback_to_self or true
+	return steam_id and player.GetBySteamID(steam_id) or ent and EyeEnt() or !ent and EyePlayer() or fallback_to_self and me or nil
 end
 local function Call(target)
 	net.Start( 'phone' )
@@ -253,7 +254,7 @@ local function job_menu()
 end
 local function preset(actual_preset, changed_binds)
 	if !jobs_presets[actual_preset] then return end
-	local preset = jobs_presets[actual_preset] 
+	local preset = table.Copy(jobs_presets[actual_preset] )
 	if changed_binds then
 		for action, callback in pairs(changed_binds) do
 			preset[action] = callback
@@ -449,10 +450,8 @@ net.Receive("freports.message", function()
 end)
 local last_preset_change_time = CurTime()
 local function toggle_preset(target_preset, name)
-	print(last_preset_change_time, CurTime())
 	if last_preset_change_time<=CurTime() then
 		last_preset_change_time = CurTime()+2
-		print(last_preset_change_time, CurTime())
 		if last_preset then
 			known_jobs[me:Team()] = last_preset
 			last_preset = nil
@@ -643,9 +642,9 @@ jobs_presets = {
 	admin = {
 		action0 = function(ply, cmd, args) use("keys", true) end,
 		action1 = function(ply, cmd, args) say("!spectate") end, 
-		action2 = function(ply, cmd, args) local target = get_target(args[1]); say("!return "..target:SteamID()) end, 
+		action2 = function(ply, cmd, args) local target = get_target(args[1], false, false) if !target then return end say("!return "..target:SteamID()) end, 
 		action3 = function(ply, cmd, args) con("noclip") end,
-		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" or me:Team() == TEAM_ADMIN then return end toggle_preset(preset("admin"), "Admin-mode") end,
+		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end toggle_preset(preset("admin"), "Admin-mode") end,
 		action5 = function(ply, cmd, args) con("ply_steamid") end,
 		action6 =  function(ply, cmd, args) use("weapon_physgun", true) end,
 	},
@@ -689,7 +688,7 @@ known_jobs = {
 	[TEAM_HOBO] = preset("civil"),
 	-- Other
 	[TEAM_BANNED] = preset("civil", {action3 = nil}),
-	[TEAM_ADMIN] = preset("admin"),
+	[TEAM_ADMIN] = preset("admin", {action4 = nil}),
 }
 for i=0,10 do
 	concommand.Remove(("job_action"..i))
