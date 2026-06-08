@@ -555,7 +555,7 @@ local function weapon_menu(callback)
 		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
 	}, function() use(main_weapon, true); use("keys", true) if callback then callback() end end, true)
 end
-disguise_menu(weapon_menu)
+weapon_menu()
 hooks = {
 	KeyPress = {name="CuffsToArrest", callback = function( ply, key )
 		if key == IN_ATTACK then
