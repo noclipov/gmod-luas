@@ -1,6 +1,6 @@
 if not DarkRP then print("[Misc] Not Loaded! There is no DarkRP.") return end
-surface.CreateFont("PromptTitleFont", {font = "Jura Regular",size = 20,weight = 700,antialias = true,shadow = false})
-surface.CreateFont("PromptQuestionFont", {font = "Jura Regular",size = 15,weight = 500,antialias = true,shadow = false})
+surface.CreateFont("PromptTitleFont", {font = "Jura Regular",size = 24,weight = 700,antialias = true,shadow = false})
+surface.CreateFont("PromptQuestionFont", {font = "Jura Regular",size = 18,weight = 500,antialias = true,shadow = false})
 surface.CreateFont("PromptButtonFont", {font = "Jura Regular",size = 14,weight = 600,antialias = true,shadow = false})
 local sf = string.format
 local me = LocalPlayer()
@@ -52,7 +52,7 @@ local function use(class, silent)
 	con("use", class)
 end
 local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
-	closebtn = closebtn or false
+    closebtn = closebtn or false
     local frame = vgui.Create("DFrame")
     frame:SetTitle("")
     frame:ShowCloseButton(false)
@@ -69,36 +69,32 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
     function frame:Paint(w, h)
         draw.RoundedBox(12, 0, 0, w, h, colors.bg)
         draw.RoundedBox(2, 20, h - 2, w - 40, 1, colors.border)
-        
-        -- Рисуем заголовок
         surface.SetFont("PromptTitleFont")
         local textW, textH = surface.GetTextSize(title)
         surface.SetTextColor(colors.text)
-        surface.SetTextPos(w / 2 - textW / 2, 10)
+        surface.SetTextPos(w / 2 - textW / 2, 1)
         surface.DrawText(title)
-        
-        -- Рисуем линию
         surface.SetDrawColor(colors.border)
-        surface.DrawLine(20, 32, w - 20, 32)
+        surface.DrawLine(20, textH+7, w - 20, textH+7)
     end
-	if closebtn then
-		local closeBtn = vgui.Create("DButton", frame)
-		closeBtn:SetText("")
-		closeBtn:SetSize(40,23)
-		closeBtn:SetPos(frame:GetWide() - 41, 5)
-		closeBtn.DoClick = function() frame:Close() end
-		
-		function closeBtn:Paint(w, h)
-			local color = self:IsHovered() and Color(255, 100, 100, 200) or Color(150, 150, 160, 150)
-			surface.SetFont("marlett")
-			local s,s1 = surface.GetTextSize("r")
-			surface.SetTextPos(w/2-s/2,0)
-			surface.SetTextColor(color)
-			surface.DrawText("r")
-		end
+    if closebtn then
+        local closeBtn = vgui.Create("DButton", frame)
+        closeBtn:SetText("")
+        closeBtn:SetSize(40,23)
+        closeBtn:SetPos(frame:GetWide() - 41, 5)
+        closeBtn.DoClick = function() frame:Close() end
+        
+        function closeBtn:Paint(w, h)
+            local color = self:IsHovered() and Color(255, 100, 100, 200) or Color(150, 150, 160, 150)
+            surface.SetFont("marlett")
+            local s,s1 = surface.GetTextSize("r")
+            surface.SetTextPos(w/2-s/2,0)
+            surface.SetTextColor(color)
+            surface.DrawText("r")
+        end
 
-		frame.PerformLayout = function(self, w, h) closeBtn:SetPos(w-41, 5) end
-	end
+        frame.PerformLayout = function(self, w, h) closeBtn:SetPos(w-41, 5) end
+    end
     local questionLabel = vgui.Create("DLabel", frame)
     questionLabel:SetText(question)
     questionLabel:SetFont("PromptQuestionFont")
@@ -110,7 +106,7 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
     local buttonPanel = vgui.Create("DPanel", frame)
     buttonPanel:SetPos(20, frame:GetTall() - 65)
     buttonPanel:SetSize(frame:GetWide() - 40, 50)
-    function buttonPanel:Paint() end
+    function buttonPanel:Paint() end    
     local fontCache = {}
     local function GetFontOfSize(size)
         local fontName = "PromptButtonFont_" .. size
@@ -125,7 +121,7 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
             fontCache[size] = fontName
         end
         return fontCache[size]
-    end
+    end    
     local function GetOptimalFontSize(text, maxWidth, maxHeight)
         for size = 14, 8, -1 do
             local fontName = GetFontOfSize(size)
@@ -136,58 +132,77 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
             end
         end
         return GetFontOfSize(8)
-    end
-    
+    end    
     local function CreateButtons()
-        buttonPanel:Clear()
-        
+        buttonPanel:Clear()        
         local btnCount = #buttons
-        if btnCount == 0 then return end
+        if btnCount == 0 then return end        
         local btnHeight = 38
         local spacing = 10
+        local btnsPerRow = 4        
+        -- Вычисляем количество строк
+        local rows = math.ceil(btnCount / btnsPerRow)
+        local btnsInLastRow = btnCount % btnsPerRow
+        if btnsInLastRow == 0 then btnsInLastRow = btnsPerRow end        
+        -- Динамическая высота панели кнопок
+        local panelHeight = (rows * btnHeight) + ((rows - 1) * 5) + 12
+        buttonPanel:SetTall(panelHeight)        
+        -- Обновляем высоту окна
+        local newHeight = 40 + questionLabel:GetTall() + panelHeight
+        frame:SetTall(newHeight)
+        frame:Center()        
+        -- Перемещаем панель кнопок вниз
+        buttonPanel:SetPos(20, frame:GetTall() - panelHeight - 15)        
         local availableWidth = buttonPanel:GetWide()
-        local btnWidth = math.min(140, (availableWidth - ((btnCount - 1) * spacing)) / btnCount)
-        btnWidth = math.max(90, btnWidth)
-        local totalWidth = (btnCount * btnWidth) + ((btnCount - 1) * spacing)
-        local startX = (availableWidth - totalWidth) / 2
-        
-        for i, btn in ipairs(buttons) do
-            local btnX = startX + ((i - 1) * (btnWidth + spacing))
-            local button = vgui.Create("DButton", buttonPanel)
-            button:SetText("")
-            button:SetSize(btnWidth, btnHeight)
-            button:SetPos(btnX, 6)
-            local btnName = btn.name
-            local btnCallback = btn.callback
+        local btnWidth = math.min(140, (availableWidth - ((btnsPerRow - 1) * spacing)) / btnsPerRow)
+        btnWidth = math.max(90, btnWidth)        
+        for row = 0, rows - 1 do
+            local btnsInThisRow = (row == rows - 1) and btnsInLastRow or btnsPerRow
+            local totalWidth = (btnsInThisRow * btnWidth) + ((btnsInThisRow - 1) * spacing)
+            local startX = (availableWidth - totalWidth) / 2
+            local yOffset = 6 + (row * (btnHeight + 5))
             
-            -- Вычисляем подходящий шрифт для этой кнопки
-            local buttonFont = GetOptimalFontSize(btnName, btnWidth, btnHeight)
-            
-            function button:Paint(w, h)
-                if self:IsHovered() then
-                    draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 130))
-                end
-                draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 100))
-                
-                local textColor = self:IsHovered() and Color(255, 255, 255, 255) or Color(200, 200, 210, 220)
-                draw.SimpleText(btnName, buttonFont, w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-            end
-            
-            function button:DoClick()
-                frame:Close()
-                if btnCallback and isfunction(btnCallback) then 
-                    btnCallback()
-                end
-                if callback and isfunction(callback) then
-                    callback(btn)
+            for i = 1, btnsInThisRow do
+                local btnIndex = (row * btnsPerRow) + i
+                if btnIndex <= btnCount then
+                    local btn = buttons[btnIndex]
+                    local btnX = startX + ((i - 1) * (btnWidth + spacing))
+                    
+                    local button = vgui.Create("DButton", buttonPanel)
+                    button:SetText("")
+                    button:SetSize(btnWidth, btnHeight)
+                    button:SetPos(btnX, yOffset)
+                    
+                    local btnName = btn.name
+                    local btnCallback = btn.callback
+                    local buttonFont = GetOptimalFontSize(btnName, btnWidth, btnHeight)
+                    
+                    function button:Paint(w, h)
+                        if self:IsHovered() then
+                            draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 130))
+                        end
+                        draw.RoundedBox(12, 0, 0, w, h, Color(0, 0, 0, 100))
+                        
+                        local textColor = self:IsHovered() and Color(255, 255, 255, 255) or Color(200, 200, 210, 220)
+                        draw.SimpleText(btnName, buttonFont, w/2, h/2, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    end
+                    
+                    function button:DoClick()
+                        frame:Close()
+                        if btnCallback and isfunction(btnCallback) then 
+                            btnCallback()
+                        end
+                        if callback and isfunction(callback) then
+                            callback(btn)
+                        end
+                    end
                 end
             end
         end
-    end
-    
+    end    
     local function AdjustWindowSize()
         local btnCount = #buttons
-        local minWidth = math.max(400, 80 + (btnCount * 100) + ((btnCount - 1) * 10))
+        local minWidth = math.max(400, 80 + (math.min(btnCount, 4) * 100) + ((math.min(btnCount, 4) - 1) * 10))
         
         -- Увеличиваем ширину для длинных слов
         local maxNameLength = 0
@@ -202,8 +217,12 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
         end
         
         local newWidth = math.min(minWidth, ScrW() - 100)
-        local newHeight = 180
-        if btnCount > 4 then newHeight = 210 end
+        
+        -- Рассчитываем высоту в зависимости от количества строк
+        local btnsPerRow = 4
+        local rows = math.ceil(btnCount / btnsPerRow)
+        local panelHeight = (rows * 38) + ((rows - 1) * 5) + 12
+        local newHeight = 130 + questionLabel:GetTall() + panelHeight
         
         frame:SetSize(newWidth, newHeight)
         frame:Center()
@@ -214,8 +233,8 @@ local function CreateDynamicPrompt(title, question, buttons, callback, closebtn)
         end
         
         if IsValid(buttonPanel) then
-            buttonPanel:SetSize(newWidth - 40, 50)
-            buttonPanel:SetPos(20, newHeight - 65)
+            buttonPanel:SetSize(newWidth - 40, panelHeight)
+            buttonPanel:SetPos(20, newHeight - panelHeight - 15)
         end
         
         CreateButtons()
@@ -517,6 +536,10 @@ local function disguise_menu(callback)
 			{name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
 			{name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
 			{name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
+			{name="Кибер Мафия", callback=function() disguise_team = TEAM_CYBER end},
+			{name="Little Evil", callback=function() disguise_team = TEAM_LITTLE end},
+			{name="Kokona Shiki", callback=function() disguise_team = TEAM_KOKONA end},
+			{name="Гражданин", callback=function() disguise_team = TEAM_CITIZEN end},
 		}, function() disguise(disguise_team); if callback then callback() end end, false)
 	else
 		disguise(disguise_team)
