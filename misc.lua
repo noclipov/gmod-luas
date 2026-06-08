@@ -473,6 +473,7 @@ commands = {
     ply_swep_class = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon():GetClass()) end,
 	ply_swep_ammo1 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Primary.Ammo) end,
 	ply_swep_ammo2 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Secondary.Ammo) end,
+	ply_hit = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("На игрока \"%s\" %s заказ%s", target:Name(), target:HasHit() and "есть" or "нет", target:HasHit() and "" or "а")) end,
 	ply_job = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("%s является %s (%s).", target:Name(), target:getDarkRPVar( "job" ), team.GetName(target:Team()))) end,
 	ply_job_cmd = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирована команда для профессии игрока \"%s\".", target:Name())); copy(target:GetTeamTable().command) end,
 	ply_nick = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("Скопирован никнейм игрока \"%s\".", target:Name())); copy(target:Name()) end,
@@ -529,7 +530,7 @@ local function disguise_menu(callback)
 		callback()
 		return
 	end
-	local insta_disguise = me:GetVelocity():Length() > 2
+	local insta_disguise = me:GetVelocity():Length() > 50
 	if !insta_disguise then
 		CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
 			{name="Годжо", callback=function() disguise_team = TEAM_SATORU end},

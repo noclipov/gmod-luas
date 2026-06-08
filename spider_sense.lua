@@ -167,7 +167,6 @@ local function DrawWeaponInfo(centerX, centerY, directionAngle, weaponInfo, colo
 	Color(255, 200, 80, 255)
     draw.SimpleText(text, "Trebuchet18", textX, textY, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end
-
 -- Основная отрисовка
 local function DrawThreatIndicator()
     if not IsValid(ply) or not ply:Alive() then return end
@@ -223,7 +222,6 @@ local function DrawThreatIndicator()
         end
     end
 end
-
 -- Отладка
 local debug_enabled = false
 local function DrawDebugInfo()
@@ -249,8 +247,6 @@ local function DrawDebugInfo()
         draw.SimpleText("No visible threats", "Trebuchet24", 10, 30, Color(100,255,100))
     end
 end
-
-
 hook.Add("HUDPaint", "OutOfView", DrawThreatIndicator)
 hook.Add("HUDPaint", "OutOfViewDebug", DrawDebugInfo)
 concommand.Add("outofview_debug", function() debug_enabled = not debug_enabled end)
