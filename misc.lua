@@ -522,26 +522,28 @@ local function IsCP(target)
 	return rp.CivilProtection[target:Team()]
 end
 local function disguise_menu(callback)
-	if !can_disguise(me) then return end
 	if disguised(me) then
 		local cur_dis = me:GetJobTable()
 		disguise_team=cur_dis.team
-		print("Disguise was set to "..cur_dis.name)
+		notify("Disguise was set to "..cur_dis.name)
 		callback()
 		return
 	end
-	local insta_disguise = me:GetVelocity():Length() > 50
+	local insta_disguise = me:GetVelocity():Length() > 70
 	if !insta_disguise then
 		CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
 			{name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
+			{name="Madara", callback=function() disguise_team = TEAM_MADARA end},
 			{name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
 			{name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
-			{name="Sans", callback=function() disguise_team = TEAM_SANSIK end},
-			{name="Кибер Мафия", callback=function() disguise_team = TEAM_CYBER end},
+			{name="Захватчица", callback=function() disguise_team = TEAM_ZAHVAT end},
 			{name="Little Evil", callback=function() disguise_team = TEAM_LITTLE end},
 			{name="Kokona Shiki", callback=function() disguise_team = TEAM_KOKONA end},
-			{name="Гражданин", callback=function() disguise_team = TEAM_CITIZEN end},
-		}, function() disguise(disguise_team); if callback then callback() end end, false)
+			{name="Ghost", callback=function() disguise_team = TEAM_GHOSTZ end},
+			{name="Вермейл", callback=function() disguise_team = TEAM_WARMALE end},
+			{name="Агент ЦРУ", callback=function() disguise_team = TEAM_CRU end},
+			{name="Немезис", callback=function() disguise_team = TEAM_NEMEZIS end},
+		}, function() disguise(disguise_team); if callback then callback() end end, true)
 	else
 		disguise(disguise_team)
 	end
@@ -552,7 +554,7 @@ local function weapon_menu(callback)
 		{name="Драгон Дигл", callback=function() main_weapon = "pist_deagon" end},
 		{name="Бландергат", callback=function() main_weapon = "deika_blundergat" end},
 		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
-	}, function() use(main_weapon, true); use("keys", true) if callback then callback() end end, false)
+	}, function() use(main_weapon, true); use("keys", true) if callback then callback() end end, true)
 end
 disguise_menu(weapon_menu)
 hooks = {
@@ -632,7 +634,7 @@ jobs_presets = {
 	hitman = {
 		action0 = function(ply, cmd, args) use("keys", true) end,
 		action1 = function(ply, cmd, args) toggle_preset(preset("admin"), "Admin-mode") end,
-		action2 = function(ply, cmd, args) if !disguised(me) and can_disguise(me) then disguise() else use("weapon_nahida_e") end end,
+		action2 = function(ply, cmd, args) if !disguised(me) then disguise_menu() else use("weapon_nahida_e") end end,
 		action3 = function(ply, cmd, args) use(main_weapon); say("Лицом к стене/в пол! 1... 2... 3...") end,
 		action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,
 		action5 = function(ply, cmd, args) use(main_weapon) end, 
@@ -663,7 +665,7 @@ known_jobs = {
 	[TEAM_CRU] = preset("fbi"),
 	[TEAM_MAYOR] = preset("mayor"),
 	-- Hitmans
-	[TEAM_HITMAN] = preset("hitman", {action4 = function(ply, cmd, args) if get_swep(me) == "the_hand" then return end use("blink")end,}),
+	[TEAM_HITMAN] = preset("hitman"),
 	[TEAM_VIPER] =  preset("hitman"),
 	[TEAM_CHROMIUM] = preset("hitman", {action2 = function(ply, cmd, args) use("weapon_nahida_e") end,action3=function(ply, cmd, args) toggle_preset(preset("maniac", {action4=function(ply, cmd, args) toggle_preset(preset("maniac"), "Maniac-mode") end, action5=function() use("weapon_camo") end}), "Maniac-mode"); use("csgo_butterfly_slaughter") end,}),
 	-- Maniacs
