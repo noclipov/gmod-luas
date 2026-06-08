@@ -255,7 +255,7 @@ end
 local function preset(actual_preset, changed_binds)
 	if !jobs_presets[actual_preset] then return end
 	local preset = table.Copy(jobs_presets[actual_preset] )
-	if changed_binds then
+	if changed_binds and #changed_binds>0 then
 		for action, callback in pairs(changed_binds) do
 			preset[action] = callback
 		end
@@ -560,19 +560,15 @@ hooks = {
 	KeyPress = {name="CuffsToArrest", callback = function( ply, key )
 		if key == IN_ATTACK then
 			if !EyePlayer() then return end
-			if known_jobs[me:Team()] == preset("police") or known_jobs[me:Team()] == preset("fbi") then
-				if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
-				elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
-			end
+			if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
+			elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
 		end
 	end},
 	KeyRelease = {name="CuffsToArrest", callback = function( ply, key )
 		if key == IN_ATTACK then
 			if !EyePlayer() then return end
-			if known_jobs[me:Team()] == preset("police") or known_jobs[me:Team()] == preset("fbi") then
-				if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
-				elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
-			end
+			if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
+			elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
 		end
 	end},
 }
