@@ -297,6 +297,7 @@ local function ToggleRainbowPhysgun()
 end
 -- Removing useless magicrp's keybinds
 hooks_to_remove = {
+	['HUDPaint'] = {'DrawHints'},
     ["Think"] = {"HandleF11UniversalHUD", "rp.KeyBinds.Think"},
     ["PreRender"] = {"BATTLEPASS_F7", "MagicArena::BindMenu", "ToggleHelpHints", "MB_OpenBonuses", "BindCrafts"}
 }
@@ -503,7 +504,7 @@ commands = {
     ent_mat = function() local target = get_target(nil, true); copy(EyeEnt():GetMaterial()) end,
     ent_model = function() local target = get_target(nil, true); copy(EyeEnt():GetModel()) end,
 	ply_sweps = function(ply, cmd, args) local target = get_target(args[1]); table.ForEach(target:GetWeapons(), function(i, swep) print(swep:GetClass()) end) end,
-    ply_swep_class = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon():GetClass()) end,
+    ply_swep_class = function(ply, cmd, args) local target = get_target(args[1]); copy(get_swep(target)) end,
 	ply_swep_ammo1 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Primary.Ammo) end,
 	ply_swep_ammo2 = function(ply, cmd, args) local target = get_target(args[1]); copy(target:GetActiveWeapon().Secondary.Ammo) end,
 	ply_hit = function(ply, cmd, args) local target = get_target(args[1]); notify(sf("На игрока \"%s\" %s заказ%s", target:Name(), target:HasHit() and "есть" or "нет", target:HasHit() and "" or "а")) end,
@@ -552,7 +553,7 @@ end
 local function IsCP(target)
 	target = target or EyePlayer()
 	if !IsValid(target) then return end
-	return rp.CivilProtection[target:Team()]
+	return rp.CivilProtection[target:Team()] or target:GetTeamTable().category == "Правительство"
 end
 local function disguise_menu(callback)
 	if disguised(me) then
