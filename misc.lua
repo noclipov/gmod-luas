@@ -13,9 +13,7 @@ local function printBox(c,w)
 	local function snf(e)print((e and"╔"or"╚")..s("═",w)..(e and"╗"or"╝"))end
 	local function divider()print("╠"..s("═",w).."╣")end
 	local function p(t,f)local x=w-#t local l=f and math.floor(x/2)or 0 print("║"..s(" ",l)..t..s(" ",x-l).."║")end
-	snf(true)p("Noclipov Loaded",1)divider()p("Commands",1)divider()
-	for _,v in pairs(c)do print("║"..v..s(" ",w-#v).."║")end
-	snf(false)
+	snf(true)p("Noclipov Loaded",1)divider()p("Commands",1)divider(); for _,v in pairs(c)do print("║"..v..s(" ",w-#v).."║")end; snf(false)
 end
 local function EyeEnt()
     local ent = me:GetEyeTrace().Entity or me
