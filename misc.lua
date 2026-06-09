@@ -6,7 +6,7 @@ local sf = string.format
 local me = LocalPlayer()
 local copy = SetClipboardText
 local con = RunConsoleCommand
-local jobs_presets, known_jobs, hooks_to_remove, panels_callback, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset
+local jobs_presets, known_jobs, hooks_to_remove, panels_callback, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset, rainbow_psys_state, OGPhysColor
 local function EyeEnt()
     local ent = me:GetEyeTrace().Entity or me
 	return ent
@@ -262,6 +262,31 @@ local function preset(actual_preset, changed_binds)
 	end
 	return preset
 end
+local function physgun_color(color_vector, console)
+	console = console or true
+	me:SetWeaponColor(color_vector)
+	if console then RunConsoleCommand("cl_weaponcolor", color_vector:Unpack()) end
+end
+local function rainbow()
+	local base_value = CurTime() * 0.1 + 0
+	local r = ( 0.5 * (math.sin(base_value - 2)	+ 1) )
+	local g = ( 0.5 * (math.sin(base_value + 2)	+ 1) )
+	local b = ( 0.5 * (math.sin(base_value)		+ 1) )
+    if rainbow_psys_state then
+        physgun_color(Vector(r, g, b), false)
+    end
+end
+local function ToggleRainbowPhysgun()
+    if !rainbow_psys_state then
+        OGPhysColor = me:GetWeaponColor()
+        hook.Add("CreateMove", "Noclipov_RainbowPsysgun", rainbow)
+    else
+        hook.Remove("CreateMove", "Noclipov_RainbowPsysgun")
+		physgun_color(OGPhysColor)
+		OGPhysColor = nil
+    end
+	rainbow_psys_state = not rainbow_psys_state
+end
 -- Removing useless magicrp's keybinds
 hooks_to_remove = {
     ["Think"] = {"HandleF11UniversalHUD", "rp.KeyBinds.Think"},
@@ -464,6 +489,7 @@ local function toggle_preset(target_preset, name)
 end
 commands = {
 	adminmode = function() toggle_preset(preset("admin"), "Admin-mode") end,
+	rainbow_psysgun = function() ToggleRainbowPhysgun() end,
 	job_menu = function() job_menu() end,
     ent_class = function() local target = get_target(nil, true); copy(target:GetClass()) end,
     ent_mat = function() local target = get_target(nil, true); copy(EyeEnt():GetMaterial()) end,
@@ -553,18 +579,19 @@ local function weapon_menu(callback)
 		{name="Драгон Дигл", callback=function() main_weapon = "pist_deagon" end},
 		{name="Бландергат", callback=function() main_weapon = "deika_blundergat" end},
 		{name="Супер Бландергат", callback=function() main_weapon = "deika_super_blundergat" end},
-	}, function() use(main_weapon, true); use("keys", true) if callback then callback() end end, true)
+	}, function() local last_swep = get_swep(me); use(main_weapon, true); use(last_swep, true) if callback then callback() end end, true)
 end
-weapon_menu()
+local function physgun_menu(callback)
+	CreateDynamicPrompt("Выбор цвета", "Какой цвет физгана поставим (для себя)?", {
+		{name="Фиолетовый", callback=function() me:SetWeaponColor(Vector(0.62, 0.43, 1)) end},
+		{name="Белый", callback=function() me:SetWeaponColor(Vector(1, 1, 1)) end},
+		{name="Черный", callback=function() me:SetWeaponColor(Vector(0, 0, 0)) end},
+		{name="Радужный", callback=function() ToggleRainbowPhysgun() end},
+	}, function() use("weapon_physgun", true) if callback then callback() end end, true)
+end
+weapon_menu(physgun_menu)
 hooks = {
 	KeyPress = {name="CuffsToArrest", callback = function( ply, key )
-		if key == IN_ATTACK then
-			if !EyePlayer() then return end
-			if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
-			elseif get_swep(me) == "arrest_baton" and not handcuffed_p() then use("handcuffs", true) end
-		end
-	end},
-	KeyRelease = {name="CuffsToArrest", callback = function( ply, key )
 		if key == IN_ATTACK then
 			if !EyePlayer() then return end
 			if get_swep(me) == "handcuffs" and handcuffed_p() then use("arrest_baton", true)
