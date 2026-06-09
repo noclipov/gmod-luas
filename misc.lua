@@ -7,6 +7,16 @@ local me = LocalPlayer()
 local copy = SetClipboardText
 local con = RunConsoleCommand
 local jobs_presets, known_jobs, hooks_to_remove, panels_callback, sweps_to_ignore, commands_base, commands, hooks, disguise_team, last_preset, rainbow_psys_state, OGPhysColor
+local function printBox(c,w)
+	table.sort(c)w=w or 40
+	local s=string.rep
+	local function snf(e)print((e and"╔"or"╚")..s("═",w)..(e and"╗"or"╝"))end
+	local function divider()print("╠"..s("═",w).."╣")end
+	local function p(t,f)local x=w-#t local l=f and math.floor(x/2)or 0 print("║"..s(" ",l)..t..s(" ",x-l).."║")end
+	snf(true)p("Noclipov Loaded",1)divider()p("Commands",1)divider()
+	for _,v in pairs(c)do print("║"..v..s(" ",w-#v).."║")end
+	snf(false)
+end
 local function EyeEnt()
     local ent = me:GetEyeTrace().Entity or me
 	return ent
@@ -721,4 +731,4 @@ for i=0,10 do
 		known_jobs[job]["action"..i](lp, cl, args)
 	end)
 end
-print("[Misc] Loaded!")
+printBox(table.GetKeys( commands ))
