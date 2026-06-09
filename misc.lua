@@ -263,7 +263,7 @@ end
 local function preset(actual_preset, changed_binds)
 	if !jobs_presets[actual_preset] then return end
 	local preset = table.Copy(jobs_presets[actual_preset] )
-	if changed_binds and #changed_binds>0 then
+	if changed_binds and (#changed_binds)>0 then
 		for action, callback in pairs(changed_binds) do
 			preset[action] = callback
 		end
@@ -520,7 +520,7 @@ for cmd,callback in pairs(commands) do
     concommand.Remove(cmd)
     concommand.Add(cmd, callback)
 end
-local disguise_team = TEAM_SATORU
+local disguise_team = TEAM_SHADOWGIRL
 local main_weapon = "m9k_dbarrel"
 local function tasered(target)
 	target = target or EyePlayer()
@@ -566,7 +566,6 @@ local function disguise_menu(callback)
 	local insta_disguise = me:GetVelocity():Length() > 70
 	if !insta_disguise then
 		CreateDynamicPrompt("Выбор маскировки", "Под какую профессию будем маскироваться?", {
-			{name="Годжо", callback=function() disguise_team = TEAM_SATORU end},
 			{name="Madara", callback=function() disguise_team = TEAM_MADARA end},
 			{name="Девочка Мафиози", callback=function() disguise_team = TEAM_MAFIOZI end},
 			{name="Шэдоу Гёрл", callback=function() disguise_team = TEAM_SHADOWGIRL end},
