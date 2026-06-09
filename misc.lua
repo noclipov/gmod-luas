@@ -729,4 +729,4 @@ for i=0,10 do
 		known_jobs[job]["action"..i](lp, cl, args)
 	end)
 end
-printBox(table.GetKeys( commands ))
+printBox(table.GetKeys(commands))
